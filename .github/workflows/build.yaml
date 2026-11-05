@@ -103,7 +103,7 @@ jobs:
     container:
       image: devkitpro/devkita64:20260219
     env:
-      BASE_URL: https://github.com/${{ github.repository }}/releases/download/switch-portlibs
+      BASE_URL: https://github.com/dragonflylee/switchfin/releases/download/switch-portlibs
     steps:
     - uses: actions/checkout@v7
       with:
