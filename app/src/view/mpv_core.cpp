@@ -168,6 +168,8 @@ void MPVCore::init() {
 #if defined(__SWITCH__)
     mpv_set_option_string(mpv, "vd-lavc-dr", "yes");
     mpv_set_option_string(mpv, "vd-lavc-threads", "3");
+    mpv_set_option_string(mpv, "demuxer-readahead-secs", "20");
+    mpv_set_option_string(mpv, "demuxer-donate-buffer", "yes");
     // This should fix random crash, but I don't know why.
     mpv_set_option_string(mpv, "opengl-glfinish", "yes");
     // Set default subfont

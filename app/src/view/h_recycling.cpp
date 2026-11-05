@@ -24,11 +24,10 @@ brls::View* HRecyclerFrame::getNextCellFocus(brls::FocusDirection direction, brl
     View* currentFocus = nullptr;
 
     while (!currentFocus && currentFocusIndex >= 0 && currentFocusIndex < this->dataSource->getItemCount()) {
-        for (auto it : this->contentBox->getChildren()) {
-            if (*((size_t*)it->getParentUserData()) == currentFocusIndex) {
-                currentFocus = it->getDefaultFocus();
-                break;
-            }
+        auto it = activeCells.find(currentFocusIndex);
+        if (it != activeCells.end()) {
+            currentFocus = it->second->getDefaultFocus();
+            break;
         }
         currentFocusIndex += offset;
     }
@@ -87,6 +86,7 @@ void HRecyclerFrame::setDataSource(RecyclingGridDataSource* source) {
 }
 
 void HRecyclerFrame::clearData() {
+    this->activeCells.clear();
     if (dataSource) {
         dataSource->clearData();
         this->reloadData();
@@ -101,6 +101,7 @@ void HRecyclerFrame::reloadData() {
         queueReusableCell((RecyclingGridItem*)child);
         this->removeCell(child);
     }
+    this->activeCells.clear();
 
     visibleMin = UINT_MAX;
     visibleMax = 0;
@@ -138,11 +139,9 @@ void HRecyclerFrame::selectRowAt(size_t index, bool animated) {
     this->setContentOffsetX(getWidthByCellIndex(index), animated);
     this->cellsRecyclingLoop();
 
-    for (View* view : contentBox->getChildren()) {
-        if (*((size_t*)view->getParentUserData()) == index) {
-            contentBox->setLastFocusedView(view);
-            break;
-        }
+    auto it = activeCells.find(index);
+    if (it != activeCells.end()) {
+        contentBox->setLastFocusedView(it->second);
     }
 }
 
@@ -158,15 +157,15 @@ void HRecyclerFrame::cellsRecyclingLoop() {
 
     // 左侧元素自动销毁
     while (true) {
-        RecyclingGridItem* minCell = nullptr;
-        for (auto it : contentBox->getChildren())
-            if (*((size_t*)it->getParentUserData()) == visibleMin) minCell = (RecyclingGridItem*)it;
+        auto it = activeCells.find(visibleMin);
+        RecyclingGridItem* minCell = (it != activeCells.end()) ? it->second : nullptr;
 
         if (!minCell || minCell->getDetachedPosition().x + cellWidth >= visibleFrame.getMinX()) break;
 
         renderedFrame.origin.x += cellWidth;
         renderedFrame.size.width -= cellWidth;
 
+        activeCells.erase(it);
         queueReusableCell(minCell);
         this->removeCell(minCell);
 
@@ -177,14 +176,14 @@ void HRecyclerFrame::cellsRecyclingLoop() {
 
     // 右侧元素自动销毁
     while (true) {
-        RecyclingGridItem* maxCell = nullptr;
-        for (auto it : contentBox->getChildren())
-            if (*((size_t*)it->getParentUserData()) == visibleMax) maxCell = (RecyclingGridItem*)it;
+        auto it = activeCells.find(visibleMax);
+        RecyclingGridItem* maxCell = (it != activeCells.end()) ? it->second : nullptr;
 
         if (!maxCell || maxCell->getDetachedPosition().x - cellWidth <= visibleFrame.getMaxX()) break;
 
         renderedFrame.size.width -= cellWidth;
 
+        activeCells.erase(it);
         queueReusableCell(maxCell);
         this->removeCell(maxCell);
 
@@ -233,6 +232,7 @@ void HRecyclerFrame::addCellAt(size_t index, int downSide) {
     cell->setIndex(index);
 
     this->contentBox->getChildren().insert(this->contentBox->getChildren().end(), cell);
+    this->activeCells[index] = cell;
 
     // Allocate and set parent userdata
     size_t* userdata = (size_t*)malloc(sizeof(size_t));

@@ -260,6 +260,7 @@ void RecyclingGrid::addCellAt(size_t index, bool downSide) {
     cell->setIndex(index);
 
     this->contentBox->getChildren().insert(this->contentBox->getChildren().end(), cell);
+    this->activeCells[index] = cell;
 
     // Allocate and set parent userdata
     size_t* userdata = (size_t*)malloc(sizeof(size_t));
@@ -308,6 +309,7 @@ void RecyclingGrid::reloadData() {
         child->willDisappear(true);
     }
     children.clear();
+    this->activeCells.clear();
 
     visibleMin = UINT_MAX;
     visibleMax = 0;
@@ -389,11 +391,8 @@ void RecyclingGrid::notifyDataChanged() {
 }
 
 RecyclingGridItem* RecyclingGrid::getGridItemByIndex(size_t index) {
-    for (brls::View* i : contentBox->getChildren()) {
-        RecyclingGridItem* v = dynamic_cast<RecyclingGridItem*>(i);
-        if (!v) continue;
-        if (v->getIndex() == index) return v;
-    }
+    auto it = activeCells.find(index);
+    if (it != activeCells.end()) return it->second;
     // 当前索引数据没有绑定列表项
     return nullptr;
 }
@@ -403,6 +402,7 @@ std::vector<RecyclingGridItem*>& RecyclingGrid::getGridItems() {
 }
 
 void RecyclingGrid::clearData() {
+    this->activeCells.clear();
     if (dataSource) {
         dataSource->clearData();
         this->reloadData();
@@ -438,9 +438,8 @@ void RecyclingGrid::itemsRecyclingLoop() {
 
     // 上方元素自动销毁
     while (true) {
-        RecyclingGridItem* minCell = nullptr;
-        for (auto it : contentBox->getChildren())
-            if (*((size_t*)it->getParentUserData()) == visibleMin) minCell = (RecyclingGridItem*)it;
+        auto it = activeCells.find(visibleMin);
+        RecyclingGridItem* minCell = (it != activeCells.end()) ? it->second : nullptr;
 
         // 当第一个cell的顶部 与 组件顶部的距离大于 preFetchLine 行元素的距离时结束
         if (!minCell || (minCell->getDetachedPosition().y +
@@ -454,6 +453,7 @@ void RecyclingGrid::itemsRecyclingLoop() {
         renderedFrame.origin.y += minCell->getIndex() % spanCount == 0 ? cellHeight + estimatedRowSpace : 0;
         renderedFrame.size.height -= minCell->getIndex() % spanCount == 0 ? cellHeight + estimatedRowSpace : 0;
 
+        activeCells.erase(it);
         queueReusableCell(minCell);
         this->removeCell(minCell);
 
@@ -464,9 +464,8 @@ void RecyclingGrid::itemsRecyclingLoop() {
 
     // 下方元素自动销毁
     while (true) {
-        RecyclingGridItem* maxCell = nullptr;
-        for (auto it : contentBox->getChildren())
-            if (*((size_t*)it->getParentUserData()) == visibleMax) maxCell = (RecyclingGridItem*)it;
+        auto it = activeCells.find(visibleMax);
+        RecyclingGridItem* maxCell = (it != activeCells.end()) ? it->second : nullptr;
 
         // 当最后一个cell的顶部 与 组件底部间的距离 小于 preFetchLine 行元素的距离时结束
         if (!maxCell || (maxCell->getDetachedPosition().y -
@@ -482,6 +481,7 @@ void RecyclingGrid::itemsRecyclingLoop() {
 
         renderedFrame.size.height -= maxCell->getIndex() % spanCount == 0 ? cellHeight + estimatedRowSpace : 0;
 
+        activeCells.erase(it);
         queueReusableCell(maxCell);
         this->removeCell(maxCell);
 
@@ -581,11 +581,10 @@ brls::View* RecyclingGrid::getNextCellFocus(brls::FocusDirection direction, brls
 
         while (!row_currentFocus && row_currentFocusIndex >= 0 &&
                row_currentFocusIndex < this->dataSource->getItemCount()) {
-            for (auto it : this->contentBox->getChildren()) {
-                if (*((size_t*)it->getParentUserData()) == row_currentFocusIndex) {
-                    row_currentFocus = it->getDefaultFocus();
-                    break;
-                }
+            auto it = activeCells.find(row_currentFocusIndex);
+            if (it != activeCells.end()) {
+                row_currentFocus = it->second->getDefaultFocus();
+                break;
             }
             row_currentFocusIndex += row_offset;
         }
@@ -629,11 +628,10 @@ brls::View* RecyclingGrid::getNextCellFocus(brls::FocusDirection direction, brls
     View* currentFocus = nullptr;
 
     while (!currentFocus && currentFocusIndex >= 0 && currentFocusIndex < this->dataSource->getItemCount()) {
-        for (auto it : this->contentBox->getChildren()) {
-            if (*((size_t*)it->getParentUserData()) == currentFocusIndex) {
-                currentFocus = it->getDefaultFocus();
-                break;
-            }
+        auto it = activeCells.find(currentFocusIndex);
+        if (it != activeCells.end()) {
+            currentFocus = it->second->getDefaultFocus();
+            break;
         }
         currentFocusIndex += offset;
     }

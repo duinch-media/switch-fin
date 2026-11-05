@@ -1,5 +1,6 @@
 #pragma once
 
+#include <unordered_map>
 #include <view/recycling_grid.hpp>
 
 class HRecyclerContentBox;
@@ -47,6 +48,7 @@ private:
 
     uint32_t visibleMin, visibleMax;
     size_t defaultCellFocus = 0;
+    std::unordered_map<size_t, RecyclingGridItem*> activeCells;
 
     float paddingTop = 0;
     float paddingRight = 0;

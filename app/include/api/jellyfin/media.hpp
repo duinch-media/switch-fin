@@ -23,17 +23,17 @@ const std::string_view apiMovieRecommend = "/Movies/Recommendations?{}";
 const std::string_view apiPlayedItems = "/Users/{}/PlayedItems/{}";
 const std::string_view apiFavoriteItems = "/Users/{}/FavoriteItems/{}";
 #ifdef USE_WEBP
-const std::string_view apiUserImage = "/Users/{}/Images/Primary?format=Webp&{}";
-const std::string_view apiPrimaryImage = "/Items/{}/Images/Primary?format=Webp&{}";
-const std::string_view apiThumbImage = "/Items/{}/Images/Thumb?format=Webp&{}";
-const std::string_view apiLogoImage = "/Items/{}/Images/Logo?format=Webp&{}";
-const std::string_view apiBackdropImage = "/Items/{}/Images/Backdrop/{}?format=Webp&{}";
+const std::string_view apiUserImage = "/Users/{}/Images/Primary?format=Webp&maxWidth=200&quality=80&{}";
+const std::string_view apiPrimaryImage = "/Items/{}/Images/Primary?format=Webp&maxWidth=400&quality=80&{}";
+const std::string_view apiThumbImage = "/Items/{}/Images/Thumb?format=Webp&maxWidth=500&quality=80&{}";
+const std::string_view apiLogoImage = "/Items/{}/Images/Logo?format=Webp&maxWidth=500&quality=80&{}";
+const std::string_view apiBackdropImage = "/Items/{}/Images/Backdrop/{}?format=Webp&maxWidth=1280&quality=80&{}";
 #else
-const std::string_view apiUserImage = "/Users/{}/Images/Primary?format=Png&{}";
-const std::string_view apiPrimaryImage = "/Items/{}/Images/Primary?format=Png&{}";
-const std::string_view apiThumbImage = "/Items/{}/Images/Thumb?format=Png&{}";
-const std::string_view apiLogoImage = "/Items/{}/Images/Logo?format=Png&{}";
-const std::string_view apiBackdropImage = "/Items/{}/Images/Backdrop/{}?format=Png&{}";
+const std::string_view apiUserImage = "/Users/{}/Images/Primary?format=Png&maxWidth=200&quality=80&{}";
+const std::string_view apiPrimaryImage = "/Items/{}/Images/Primary?format=Png&maxWidth=400&quality=80&{}";
+const std::string_view apiThumbImage = "/Items/{}/Images/Thumb?format=Png&maxWidth=500&quality=80&{}";
+const std::string_view apiLogoImage = "/Items/{}/Images/Logo?format=Png&maxWidth=500&quality=80&{}";
+const std::string_view apiBackdropImage = "/Items/{}/Images/Backdrop/{}?format=Png&maxWidth=1280&quality=80&{}";
 #endif
 
 // danmu plugin
