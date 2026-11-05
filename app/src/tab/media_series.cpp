@@ -115,8 +115,11 @@ void MediaSeries::doSeries() {
                 this->labelGenres->setVisibility(brls::Visibility::VISIBLE);
             }
             if (r.People.size() > 0) {
+                this->labelPeople->setVisibility(brls::Visibility::VISIBLE);
+                this->people->setVisibility(brls::Visibility::VISIBLE);
                 this->people->setDataSource(new PeopleDataSource(r.People));
             } else {
+                this->labelPeople->setVisibility(brls::Visibility::GONE);
                 this->people->setVisibility(brls::Visibility::GONE);
             }
             this->updateFavoriteButton(r.UserData.IsFavorite);
@@ -161,6 +164,7 @@ void MediaSeries::doSeries() {
         },
         [ASYNC_TOKEN](const std::string& ex) {
             ASYNC_RELEASE
+            this->labelPeople->setVisibility(brls::Visibility::GONE);
             this->people->setVisibility(brls::Visibility::GONE);
         },
         jellyfin::apiUserItem, AppConfig::instance().getUserId(), this->seriesId);

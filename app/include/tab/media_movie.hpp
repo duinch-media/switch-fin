@@ -33,6 +33,7 @@ private:
     BRLS_BIND(TextBox, labelOverview, "movie/label/overview");
     BRLS_BIND(brls::Label, labelGenres, "movie/label/genres");
     BRLS_BIND(brls::Header, labelSimilar, "movie/label/similar");
+    BRLS_BIND(brls::Header, labelPeople, "movie/label/people");
     BRLS_BIND(brls::SelectorCell, btnSource, "movie/source");
     BRLS_BIND(IconButton, btnPlay, "movie/play");
     BRLS_BIND(IconButton, btnDownload, "movie/download");
