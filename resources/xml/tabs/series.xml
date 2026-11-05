@@ -2,10 +2,10 @@
     width="auto"
     height="auto">
 
-    <!-- centered: the scroll follows the D-pad focus (buttons -> seasons -> rows) -->
+    <!-- natural: scroll freely without snapping back to focused button -->
     <brls:ScrollingFrame
         grow="1.0"
-        scrollingBehavior="centered">
+        scrollingBehavior="natural">
 
         <brls:Box
             axis="column"

@@ -32,6 +32,7 @@ MediaMovie::MediaMovie(const jellyfin::Item& item) : itemId(item.Id) {
     // follows the focus
     this->btnPlay->setCustomNavigationRoute(brls::FocusDirection::DOWN, "movie/people");
     this->btnDownload->setCustomNavigationRoute(brls::FocusDirection::DOWN, "movie/people");
+    this->btnFavorite->setCustomNavigationRoute(brls::FocusDirection::DOWN, "movie/people");
 
     this->btnPlay->registerClickAction([this, item](...) {
         PlayerView* view = new PlayerView(item, this->playTicks, this->sourceId);

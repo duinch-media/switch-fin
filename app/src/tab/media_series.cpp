@@ -41,6 +41,7 @@ MediaSeries::MediaSeries(const jellyfin::Episode& item) {
     // explicit route (cf. media_movie.cpp)
     this->btnPlay->setCustomNavigationRoute(brls::FocusDirection::DOWN, "series/seasons");
     this->btnDownload->setCustomNavigationRoute(brls::FocusDirection::DOWN, "series/seasons");
+    this->btnFavorite->setCustomNavigationRoute(brls::FocusDirection::DOWN, "series/seasons");
 
     this->btnPlay->registerClickAction([this](...) {
         this->doPlay();

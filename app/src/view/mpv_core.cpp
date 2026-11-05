@@ -178,6 +178,11 @@ void MPVCore::init() {
         mpv_set_option_string(mpv, "sub-font", "nintendo_udjxh-db_zh-tw_003");
     else if (locale == brls::LOCALE_Ko)
         mpv_set_option_string(mpv, "sub-font", "nintendo_udsg-r_ko_003");
+    else {
+        mpv_set_option_string(mpv, "sub-font", "subfont.ttf");
+        mpv_set_option_string(mpv, "sub-font-provider", "none");
+        mpv_set_option_string(mpv, "sub-ass-override", "force");
+    }
 #elif defined(__PS4__)
     mpv_set_option_string(mpv, "vd-lavc-threads", "6");
 #elif defined(__PSV__)
