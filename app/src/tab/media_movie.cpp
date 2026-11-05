@@ -180,10 +180,15 @@ void MediaMovie::doMovie() {
             if (r.BackdropImageTags.size() > 0) {
                 Image::load(this->imageBackdrop, jellyfin::apiBackdropImage, r.Id, 0,
                     HTTP::encode_form({{"tag", r.BackdropImageTags.at(0)}}));
+            } else if (poster != r.ImageTags.end()) {
+                // Fallback to poster if no backdrop exists so UI is not pushed up
+                Image::load(this->imageBackdrop, jellyfin::apiPrimaryImage, r.Id,
+                    HTTP::encode_form({
+                        {"tag", poster->second},
+                        {"maxWidth", "800"},
+                    }));
             } else {
-                this->bannerBox->setVisibility(brls::Visibility::GONE);
-                this->contentRow->setMarginTop(0);
-                this->contentInfo->setMarginTop(0);
+                this->imageBackdrop->setImageFromRes("img/video-card-bg.png");
             }
 
             if (r.MediaSources.size() > 1) {
