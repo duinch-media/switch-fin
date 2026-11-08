@@ -1,0 +1,14 @@
+{
+  "radarr": {
+    "url": "http://192.168.1.100:7878",
+    "api_key": "YOUR_RADARR_API_KEY",
+    "root": "/movies",
+    "profile": 1
+  },
+  "sonarr": {
+    "url": "http://192.168.1.100:8989",
+    "api_key": "YOUR_SONARR_API_KEY",
+    "root": "/tv",
+    "profile": 1
+  }
+}
