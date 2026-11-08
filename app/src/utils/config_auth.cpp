@@ -1,6 +1,8 @@
 #include <borealis.hpp>
+#include <fstream>
 #include "api/jellyfin.hpp"
 #include "utils/config.hpp"
+#include "utils/misc.hpp"
 #include "view/danmaku_core.hpp"
 
 bool AppConfig::checkLogin() {
