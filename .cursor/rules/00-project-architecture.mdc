@@ -1,0 +1,9 @@
+---
+description: Core architecture (modular-clean + mvc-borealis), 6-Gate Execution Harness & Security rules for Switchfin
+globs:
+alwaysApply: true
+---
+
+Strictly follow `AGENTS.md`, `.agents/rules/execution-harness.md`, and `.agents/rules/security-gate.md`.
+- **Stack**: C++ / Nintendo Switch Homebrew (CMake + libnx + Borealis) | **Arch**: `modular-clean` | **Pattern**: `mvc-borealis` | **Ref**: `dragonflylee/switchfin`
+- **Hard File Cap**: Warn > 300 LOC, Fail > 450 LOC. Zero hardcoded secrets.

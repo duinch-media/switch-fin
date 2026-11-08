@@ -1,0 +1,4 @@
+# Switchfin — AI Coding & Security Rules
+
+Strictly follow `AGENTS.md`, `.agents/rules/execution-harness.md`, and `.agents/rules/security-gate.md`.
+Architecture: `modular-clean` | Pattern: `mvc-borealis` | Reference Repo: `dragonflylee/switchfin` | Max File Lines: `450`.
