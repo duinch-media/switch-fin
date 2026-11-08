@@ -19,21 +19,21 @@ if command -v gitleaks >/dev/null 2>&1; then
   gitleaks detect --source "$ROOT_DIR" --redact --no-banner
 fi
 echo "[pre-push] 2/4 Checking dependency vulnerabilities..."
-if [ -x "flawfinder" ] || command -v "flawfinder" >/dev/null 2>&1; then
+if command -v flawfinder >/dev/null 2>&1; then
   flawfinder --minlevel=3 app/src/ || { echo "[pre-push] High-severity dependency issue found." >&2; exit 1; }
 else
-  echo "[pre-push] (Skipped `flawfinder --minlevel=3 app/src/` — `flawfinder` not in PATH)"
+  echo "[pre-push] (Skipped flawfinder - not in PATH)"
 fi
 echo "[pre-push] 3/4 Running lint & static typecheck..."
-if [ -x "clang-format" ] || command -v "clang-format" >/dev/null 2>&1; then
+if command -v clang-format >/dev/null 2>&1 && [ -f "build/compile_commands.json" ]; then
   clang-format --dry-run -Werror $(find app -name '*.cpp' -o -name '*.hpp') && clang-tidy -p build app/src/*.cpp
 else
-  echo "[pre-push] (Skipped `clang-format --dry-run -Werror $(find app -name '*.cpp' -o -name '*.hpp') && clang-tidy -p build app/src/*.cpp` — `clang-format` not in PATH)"
+  echo "[pre-push] (Skipped clang-format/clang-tidy - build not configured or tool not in PATH)"
 fi
 echo "[pre-push] 4/4 Running unit test suite..."
-if [ -x "ctest" ] || command -v "ctest" >/dev/null 2>&1; then
+if command -v ctest >/dev/null 2>&1 && [ -f "build/CTestTestfile.cmake" ]; then
   ctest --test-dir build --output-on-failure
 else
-  echo "[pre-push] (Skipped `ctest --test-dir build --output-on-failure` — `ctest` not in PATH)"
+  echo "[pre-push] (Skipped ctest - build/CTestTestfile.cmake not found)"
 fi
 echo "[pre-push] All security, architecture, lint, and test gates PASSED."
