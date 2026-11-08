@@ -64,15 +64,15 @@ void ArrSetting::testRadarr() {
         return;
     }
 
-    this->btnRadarrTest->setDetail("Testing...");
+    this->btnRadarrTest->setDetailText("Testing...");
     brls::async([this, url, key]() {
         auto res = data::ArrClient::instance().testRadarr(url, key);
         brls::sync([this, res]() {
             if (res.isOk()) {
-                this->btnRadarrTest->setDetail("Connected OK");
+                this->btnRadarrTest->setDetailText("Connected OK");
                 Dialog::show(res.value());
             } else {
-                this->btnRadarrTest->setDetail("Failed");
+                this->btnRadarrTest->setDetailText("Failed");
                 Dialog::show("Radarr Connection Failed: " + res.error().message);
             }
         });
@@ -87,15 +87,15 @@ void ArrSetting::testSonarr() {
         return;
     }
 
-    this->btnSonarrTest->setDetail("Testing...");
+    this->btnSonarrTest->setDetailText("Testing...");
     brls::async([this, url, key]() {
         auto res = data::ArrClient::instance().testSonarr(url, key);
         brls::sync([this, res]() {
             if (res.isOk()) {
-                this->btnSonarrTest->setDetail("Connected OK");
+                this->btnSonarrTest->setDetailText("Connected OK");
                 Dialog::show(res.value());
             } else {
-                this->btnSonarrTest->setDetail("Failed");
+                this->btnSonarrTest->setDetailText("Failed");
                 Dialog::show("Sonarr Connection Failed: " + res.error().message);
             }
         });

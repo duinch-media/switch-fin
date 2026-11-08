@@ -88,13 +88,13 @@ void RequestTab::onCreate() {
 void RequestTab::cycleFilter() {
     if (this->currentFilter == FilterType::ALL) {
         this->currentFilter = FilterType::MOVIES;
-        this->btnFilter->setDetail("Movies (Radarr)");
+        this->btnFilter->setDetailText("Movies (Radarr)");
     } else if (this->currentFilter == FilterType::MOVIES) {
         this->currentFilter = FilterType::TV;
-        this->btnFilter->setDetail("TV (Sonarr)");
+        this->btnFilter->setDetailText("TV (Sonarr)");
     } else {
         this->currentFilter = FilterType::ALL;
-        this->btnFilter->setDetail("All");
+        this->btnFilter->setDetailText("All");
     }
     this->renderResults();
 }
