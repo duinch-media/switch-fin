@@ -1,0 +1,75 @@
+<brls:Box
+    width="auto"
+    height="auto"
+    axis="column">
+
+    <brls:ScrollingFrame
+        width="auto"
+        height="auto"
+        grow="1.0">
+
+        <brls:Box
+            width="auto"
+            height="auto"
+            axis="column"
+            paddingLeft="@style/main/content_padding_sides"
+            paddingRight="@style/main/content_padding_sides"
+            paddingTop="@style/main/content_padding_top_bottom"
+            paddingBottom="@style/main/content_padding_top_bottom">
+
+            <brls:Header
+                title="Radarr (Movies)" />
+
+            <brls:InputCell
+                id="setting/radarr/url"
+                title="Server URL"
+                hint="http://ip:7878" />
+
+            <brls:InputCell
+                id="setting/radarr/key"
+                title="API Key"
+                hint="Radarr API Key" />
+
+            <brls:InputCell
+                id="setting/radarr/root"
+                title="Root Folder"
+                hint="/movies" />
+
+            <brls:DetailCell
+                id="setting/radarr/test"
+                title="Test Connection"
+                detail="Click to test" />
+
+            <brls:Header
+                marginTop="20"
+                title="Sonarr (TV Series)" />
+
+            <brls:InputCell
+                id="setting/sonarr/url"
+                title="Server URL"
+                hint="http://ip:8989" />
+
+            <brls:InputCell
+                id="setting/sonarr/key"
+                title="API Key"
+                hint="Sonarr API Key" />
+
+            <brls:InputCell
+                id="setting/sonarr/root"
+                title="Root Folder"
+                hint="/tv" />
+
+            <brls:DetailCell
+                id="setting/sonarr/test"
+                title="Test Connection"
+                detail="Click to test" />
+
+        </brls:Box>
+    </brls:ScrollingFrame>
+
+    <ButtonClose
+        positionType="absolute"
+        positionTop="2"
+        positionRight="2" />
+
+</brls:Box>

@@ -13,6 +13,7 @@
 #include "view/people_source.hpp"
 #include "view/video_source.hpp"
 #include "utils/dialog.hpp"
+#include "utils/arr_actions.hpp"
 #include <fmt/ranges.h>
 
 using namespace brls::literals;  // for _i18n
@@ -42,6 +43,14 @@ MediaSeries::MediaSeries(const jellyfin::Episode& item) {
     this->btnPlay->setCustomNavigationRoute(brls::FocusDirection::DOWN, "series/seasons");
     this->btnDownload->setCustomNavigationRoute(brls::FocusDirection::DOWN, "series/seasons");
     this->btnFavorite->setCustomNavigationRoute(brls::FocusDirection::DOWN, "series/seasons");
+    this->btnSonarr->setCustomNavigationRoute(brls::FocusDirection::DOWN, "series/seasons");
+
+    std::string seriesTitle = item.SeriesName.empty() ? item.Name : item.SeriesName;
+    int seriesYear = item.ProductionYear;
+    this->btnSonarr->registerClickAction([this, seriesTitle, seriesYear](...) {
+        ArrActions::handleSeriesRequest(this, seriesTitle, seriesYear);
+        return true;
+    });
 
     this->btnPlay->registerClickAction([this](...) {
         this->doPlay();

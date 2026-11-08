@@ -10,6 +10,7 @@
 #include "api/jellyfin.hpp"
 #include "utils/misc.hpp"
 #include "utils/dialog.hpp"
+#include "utils/arr_actions.hpp"
 #include <fmt/ranges.h>
 
 using namespace brls::literals;  // for _i18n
@@ -33,6 +34,10 @@ MediaMovie::MediaMovie(const jellyfin::Item& item) : itemId(item.Id) {
     this->btnPlay->setCustomNavigationRoute(brls::FocusDirection::DOWN, "movie/people");
     this->btnDownload->setCustomNavigationRoute(brls::FocusDirection::DOWN, "movie/people");
     this->btnFavorite->setCustomNavigationRoute(brls::FocusDirection::DOWN, "movie/people");
+    this->btnRadarr->setCustomNavigationRoute(brls::FocusDirection::DOWN, "movie/people");
+    this->btnRadarr->registerClickAction([this, item](...) {
+        return ArrActions::handleMovieRequest(this, item.Name, item.ProductionYear), true;
+    });
 
     this->btnPlay->registerClickAction([this, item](...) {
         PlayerView* view = new PlayerView(item, this->playTicks, this->sourceId);

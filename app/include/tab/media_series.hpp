@@ -37,6 +37,7 @@ private:
     BRLS_BIND(IconButton, btnPlay, "series/play");
     BRLS_BIND(IconButton, btnDownload, "series/download");
     BRLS_BIND(IconButton, btnFavorite, "series/favorite");
+    BRLS_BIND(IconButton, btnSonarr, "series/sonarr");
     BRLS_BIND(brls::Header, labelSeasons, "series/label/seasons");
     BRLS_BIND(HRecyclerFrame, seasons, "series/seasons");
     BRLS_BIND(brls::Header, labelSimilar, "series/label/similar");
