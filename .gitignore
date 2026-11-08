@@ -22,6 +22,7 @@ debian/.debhelper
 /jniLibs/
 
 # Security & Secret Hygiene (managed by project-pro)
+arr_config.json
 .env
 .env.*
 !.env.example
