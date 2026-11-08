@@ -1,4 +1,4 @@
-package fun.dragonfly.switchfin;
+package app.duinch.switch.fin;
 
 import android.database.ContentObserver;
 import android.graphics.PixelFormat;

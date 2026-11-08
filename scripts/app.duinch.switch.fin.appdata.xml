@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <component type="desktop">
-    <id>fun.dragonfly.switchfin</id>
+    <id>app.duinch.switch.fin</id>
     <metadata_license>CC0-1.0</metadata_license>
     <name>Switchfin</name>
     <project_license>Apache-2.0</project_license>
-    <developer id="fun.dragonfly">
+    <developer id="app.duinch">
         <name>dragonflylee</name>
     </developer>
     <summary>Third-party native Jellyfin client</summary>
-    <launchable type="desktop-id">fun.dragonfly.switchfin.desktop</launchable>
+    <launchable type="desktop-id">app.duinch.switch.fin.desktop</launchable>
     <translation type="gettext">switchfin</translation>
     <content_rating type="oars-1.1">
         <content_attribute id="social-info">mild</content_attribute>

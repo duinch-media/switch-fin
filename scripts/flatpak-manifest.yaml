@@ -1,4 +1,4 @@
-app-id: fun.dragonfly.switchfin
+app-id: app.duinch.switch.fin
 runtime: org.freedesktop.Platform
 runtime-version: "25.08"
 sdk: org.freedesktop.Sdk

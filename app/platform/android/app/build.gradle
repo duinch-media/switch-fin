@@ -3,9 +3,10 @@ plugins {
 }
 
 android {
-    namespace = "fun.dragonfly.switchfin"
+    namespace = "app.duinch.switch.fin"
     compileSdkVersion 34
     defaultConfig {
+        applicationId "app.duinch.switch.fin"
         minSdkVersion 21
         targetSdkVersion 34
         versionCode project.findProperty('versionCode')?.toInteger() ?: 1
