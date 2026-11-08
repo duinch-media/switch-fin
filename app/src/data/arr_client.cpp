@@ -25,6 +25,25 @@ std::string urlEncode(const std::string& value) {
     return escaped.str();
 }
 
+std::string withApiKey(const std::string& url, const std::string& key) {
+    if (key.empty()) return url;
+    char sep = (url.find('?') == std::string::npos) ? '?' : '&';
+    return url + sep + "apikey=" + key;
+}
+
+HTTP::Header makeHeaders(const std::string& key, bool isJsonPost = false) {
+    HTTP::Header h;
+    if (!key.empty()) {
+        h.push_back("X-Api-Key: " + key);
+        h.push_back("Authorization: Bearer " + key);
+    }
+    h.push_back("Accept: application/json");
+    if (isJsonPost) {
+        h.push_back("Content-Type: application/json");
+    }
+    return h;
+}
+
 std::string extractPoster(const nlohmann::json& j) {
     if (j.contains("images") && j["images"].is_array()) {
         for (const auto& img : j["images"]) {
@@ -57,8 +76,8 @@ domain::Result<std::vector<domain::RequestMediaItem>> ArrClient::searchMovie(con
         return domain::DomainError::unauthorized("Radarr is not configured");
     }
 
-    std::string url = baseUrl + "/api/v3/movie/lookup?term=" + urlEncode(query);
-    HTTP::Header headers = {"X-Api-Key: " + key, "Accept: application/json"};
+    std::string url = withApiKey(baseUrl + "/api/v3/movie/lookup?term=" + urlEncode(query), key);
+    HTTP::Header headers = makeHeaders(key);
 
     try {
         std::string resp = HTTP::get(url, headers, HTTP::Timeout{5000});
@@ -98,8 +117,8 @@ domain::Result<std::vector<domain::RequestMediaItem>> ArrClient::searchSeries(co
         return domain::DomainError::unauthorized("Sonarr is not configured");
     }
 
-    std::string url = baseUrl + "/api/v3/series/lookup?term=" + urlEncode(query);
-    HTTP::Header headers = {"X-Api-Key: " + key, "Accept: application/json"};
+    std::string url = withApiKey(baseUrl + "/api/v3/series/lookup?term=" + urlEncode(query), key);
+    HTTP::Header headers = makeHeaders(key);
 
     try {
         std::string resp = HTTP::get(url, headers, HTTP::Timeout{5000});
@@ -138,8 +157,8 @@ domain::Result<bool> ArrClient::requestMovie(
         return domain::DomainError::unauthorized("Radarr is not configured");
     }
 
-    std::string url = baseUrl + "/api/v3/movie";
-    HTTP::Header headers = {"X-Api-Key: " + key, "Content-Type: application/json"};
+    std::string url = withApiKey(baseUrl + "/api/v3/movie", key);
+    HTTP::Header headers = makeHeaders(key, true);
 
     nlohmann::json body = {
         {"title", item.title},
@@ -173,8 +192,8 @@ domain::Result<bool> ArrClient::requestSeries(
         return domain::DomainError::unauthorized("Sonarr is not configured");
     }
 
-    std::string url = baseUrl + "/api/v3/series";
-    HTTP::Header headers = {"X-Api-Key: " + key, "Content-Type: application/json"};
+    std::string url = withApiKey(baseUrl + "/api/v3/series", key);
+    HTTP::Header headers = makeHeaders(key, true);
 
     nlohmann::json body = {
         {"title", item.title},
@@ -208,8 +227,8 @@ domain::Result<domain::RequestMediaItem> ArrClient::checkMovieStatus(int tmdbId)
         return domain::DomainError::unauthorized("Radarr is not configured");
     }
 
-    std::string url = baseUrl + "/api/v3/movie/lookup/tmdb?tmdbId=" + std::to_string(tmdbId);
-    HTTP::Header headers = {"X-Api-Key: " + key, "Accept: application/json"};
+    std::string url = withApiKey(baseUrl + "/api/v3/movie/lookup/tmdb?tmdbId=" + std::to_string(tmdbId), key);
+    HTTP::Header headers = makeHeaders(key);
 
     try {
         std::string resp = HTTP::get(url, headers, HTTP::Timeout{5000});
@@ -237,8 +256,8 @@ domain::Result<domain::RequestMediaItem> ArrClient::checkSeriesStatus(int tvdbId
         return domain::DomainError::unauthorized("Sonarr is not configured");
     }
 
-    std::string url = baseUrl + "/api/v3/series/lookup?term=tvdb:" + std::to_string(tvdbId);
-    HTTP::Header headers = {"X-Api-Key: " + key, "Accept: application/json"};
+    std::string url = withApiKey(baseUrl + "/api/v3/series/lookup?term=tvdb:" + std::to_string(tvdbId), key);
+    HTTP::Header headers = makeHeaders(key);
 
     try {
         std::string resp = HTTP::get(url, headers, HTTP::Timeout{5000});
@@ -262,11 +281,17 @@ domain::Result<domain::RequestMediaItem> ArrClient::checkSeriesStatus(int tvdbId
 }
 
 domain::Result<std::string> ArrClient::testRadarr(const std::string& url, const std::string& key) {
-    std::string testUrl = url + "/api/v3/system/status";
-    HTTP::Header headers = {"X-Api-Key: " + key, "Accept: application/json"};
+    std::string testUrl = withApiKey(url + "/api/v3/system/status", key);
+    HTTP::Header headers = makeHeaders(key);
     try {
         std::string resp = HTTP::get(testUrl, headers, HTTP::Timeout{4000});
         nlohmann::json j = nlohmann::json::parse(resp);
+        if (j.contains("error")) {
+            return domain::DomainError::unauthorized(j.value("error", "Unauthorized"));
+        }
+        if (j.contains("message")) {
+            return domain::DomainError::unauthorized(j.value("message", "Unauthorized"));
+        }
         std::string ver = j.value("version", "OK");
         return "Connected to Radarr v" + ver;
     } catch (const std::exception& e) {
@@ -275,11 +300,17 @@ domain::Result<std::string> ArrClient::testRadarr(const std::string& url, const 
 }
 
 domain::Result<std::string> ArrClient::testSonarr(const std::string& url, const std::string& key) {
-    std::string testUrl = url + "/api/v3/system/status";
-    HTTP::Header headers = {"X-Api-Key: " + key, "Accept: application/json"};
+    std::string testUrl = withApiKey(url + "/api/v3/system/status", key);
+    HTTP::Header headers = makeHeaders(key);
     try {
         std::string resp = HTTP::get(testUrl, headers, HTTP::Timeout{4000});
         nlohmann::json j = nlohmann::json::parse(resp);
+        if (j.contains("error")) {
+            return domain::DomainError::unauthorized(j.value("error", "Unauthorized"));
+        }
+        if (j.contains("message")) {
+            return domain::DomainError::unauthorized(j.value("message", "Unauthorized"));
+        }
         std::string ver = j.value("version", "OK");
         return "Connected to Sonarr v" + ver;
     } catch (const std::exception& e) {

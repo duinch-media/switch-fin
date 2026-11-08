@@ -63,6 +63,16 @@ std::string cleanUrl(std::string url) {
     return url;
 }
 
+std::string cleanKey(std::string key) {
+    while (!key.empty() && (std::isspace(static_cast<unsigned char>(key.front())) || key.front() == '\r' || key.front() == '\n')) {
+        key.erase(key.begin());
+    }
+    while (!key.empty() && (std::isspace(static_cast<unsigned char>(key.back())) || key.back() == '\r' || key.back() == '\n')) {
+        key.pop_back();
+    }
+    return key;
+}
+
 } // namespace
 
 std::string ArrConfig::getRadarrUrl() {
@@ -87,7 +97,7 @@ std::string ArrConfig::getRadarrKey() {
 void ArrConfig::setRadarrKey(const std::string& key) {
     std::lock_guard<std::mutex> lock(s_mutex);
     loadLocked();
-    s_data.radarrKey = key;
+    s_data.radarrKey = cleanKey(key);
     saveLocked();
 }
 
@@ -139,7 +149,7 @@ std::string ArrConfig::getSonarrKey() {
 void ArrConfig::setSonarrKey(const std::string& key) {
     std::lock_guard<std::mutex> lock(s_mutex);
     loadLocked();
-    s_data.sonarrKey = key;
+    s_data.sonarrKey = cleanKey(key);
     saveLocked();
 }
 

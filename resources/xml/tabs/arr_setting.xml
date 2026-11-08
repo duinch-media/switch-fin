@@ -40,6 +40,11 @@
                 title="Test Connection"
                 detail="Click to test" />
 
+            <brls:DetailCell
+                id="setting/radarr/scan"
+                title="Scan LAN for Radarr"
+                detail="Auto-discover IP (:7878)" />
+
             <brls:Header
                 marginTop="20"
                 title="Sonarr (TV Series)" />
@@ -63,6 +68,11 @@
                 id="setting/sonarr/test"
                 title="Test Connection"
                 detail="Click to test" />
+
+            <brls:DetailCell
+                id="setting/sonarr/scan"
+                title="Scan LAN for Sonarr"
+                detail="Auto-discover IP (:8989)" />
 
         </brls:Box>
     </brls:ScrollingFrame>

@@ -1,6 +1,7 @@
 #include "tab/arr_setting.hpp"
 #include "utils/arr_config.hpp"
 #include "data/arr_client.hpp"
+#include "data/arr_scanner.hpp"
 #include "utils/dialog.hpp"
 #include <borealis/core/thread.hpp>
 
@@ -32,6 +33,11 @@ ArrSetting::ArrSetting() {
         return true;
     });
 
+    this->btnRadarrScan->registerClickAction([this](...) {
+        this->scanRadarr();
+        return true;
+    });
+
     // Sonarr
     this->inputSonarrUrl->init(
         "Server URL", ArrConfig::getSonarrUrl(),
@@ -50,6 +56,11 @@ ArrSetting::ArrSetting() {
 
     this->btnSonarrTest->registerClickAction([this](...) {
         this->testSonarr();
+        return true;
+    });
+
+    this->btnSonarrScan->registerClickAction([this](...) {
+        this->scanSonarr();
         return true;
     });
 }
@@ -79,6 +90,28 @@ void ArrSetting::testRadarr() {
     });
 }
 
+void ArrSetting::scanRadarr() {
+    this->btnRadarrScan->setDetailText("Scanning LAN...");
+    std::string currentKey = ArrConfig::getRadarrKey();
+
+    data::ArrScanner::scan(
+        data::DiscoveredArr::RADARR, currentKey,
+        [this](const data::DiscoveredArr& d) {
+            this->inputRadarrUrl->setValue(d.url);
+            ArrConfig::setRadarrUrl(d.url);
+            std::string status = "Found: " + d.url + (d.authOk ? " (Auth OK)" : " (Need Key)");
+            this->btnRadarrScan->setDetailText(status);
+            this->btnRadarrTest->setDetailText(d.authOk ? "Connected OK" : "Verify Key");
+            Dialog::show("Discovered Radarr at " + d.url + (d.authOk ? "\nAPI Key authenticated successfully!" : "\nPlease enter API Key to finish setup."));
+        },
+        [this](bool found) {
+            if (!found) {
+                this->btnRadarrScan->setDetailText("Not found");
+                Dialog::show("No Radarr server found on LAN (:7878).\nCheck if Radarr is running on your network.");
+            }
+        });
+}
+
 void ArrSetting::testSonarr() {
     std::string url = ArrConfig::getSonarrUrl();
     std::string key = ArrConfig::getSonarrKey();
@@ -100,4 +133,26 @@ void ArrSetting::testSonarr() {
             }
         });
     });
+}
+
+void ArrSetting::scanSonarr() {
+    this->btnSonarrScan->setDetailText("Scanning LAN...");
+    std::string currentKey = ArrConfig::getSonarrKey();
+
+    data::ArrScanner::scan(
+        data::DiscoveredArr::SONARR, currentKey,
+        [this](const data::DiscoveredArr& d) {
+            this->inputSonarrUrl->setValue(d.url);
+            ArrConfig::setSonarrUrl(d.url);
+            std::string status = "Found: " + d.url + (d.authOk ? " (Auth OK)" : " (Need Key)");
+            this->btnSonarrScan->setDetailText(status);
+            this->btnSonarrTest->setDetailText(d.authOk ? "Connected OK" : "Verify Key");
+            Dialog::show("Discovered Sonarr at " + d.url + (d.authOk ? "\nAPI Key authenticated successfully!" : "\nPlease enter API Key to finish setup."));
+        },
+        [this](bool found) {
+            if (!found) {
+                this->btnSonarrScan->setDetailText("Not found");
+                Dialog::show("No Sonarr server found on LAN (:8989).\nCheck if Sonarr is running on your network.");
+            }
+        });
 }

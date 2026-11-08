@@ -82,7 +82,6 @@ RequestTab::RequestTab() {
 RequestTab::~RequestTab() = default;
 
 void RequestTab::onCreate() {
-    this->registerTabAction(this);
 }
 
 void RequestTab::cycleFilter() {
