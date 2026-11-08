@@ -24,20 +24,12 @@ try:
     # Ensure /switch directory
     ftp.cwd('/switch')
 
-    # Upload Switchfin.nro
+    # Upload Switchfin.nro directly to /switch/Switchfin.nro (standard single location)
     file_size = os.path.getsize(NRO_PATH)
-    print(f"Uploading Switchfin.nro ({file_size / (1024*1024):.2f} MB)...")
+    print(f"Uploading Switchfin.nro ({file_size / (1024*1024):.2f} MB) to /switch/Switchfin.nro...")
     with open(NRO_PATH, 'rb') as f:
         ftp.storbinary('STOR /switch/Switchfin.nro', f)
     print("✓ Uploaded /switch/Switchfin.nro")
-
-    # Also upload to /switch/Switchfin/Switchfin.nro if folder exists
-    try:
-        with open(NRO_PATH, 'rb') as f:
-            ftp.storbinary('STOR /switch/Switchfin/Switchfin.nro', f)
-        print("✓ Uploaded /switch/Switchfin/Switchfin.nro")
-    except Exception as e:
-        print(f"Note (subfolder copy): {e}")
 
     # Check and upload arr_config.json
     try:
