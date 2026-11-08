@@ -52,9 +52,8 @@
     <brls:Label
         id="request/card/title"
         fontSize="14"
-        lines="2"
         marginTop="4"
-        textColor="@theme/font/align" />
+        textColor="@theme/brls/text" />
 
     <brls:Label
         id="request/card/year"

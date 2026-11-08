@@ -22,28 +22,23 @@
 
             <brls:InputCell
                 id="setting/radarr/url"
-                title="Server URL"
-                hint="http://ip:7878" />
+                title="Server URL" />
 
             <brls:InputCell
                 id="setting/radarr/key"
-                title="API Key"
-                hint="Radarr API Key" />
+                title="API Key" />
 
             <brls:InputCell
                 id="setting/radarr/root"
-                title="Root Folder"
-                hint="/movies" />
+                title="Root Folder" />
 
             <brls:DetailCell
                 id="setting/radarr/test"
-                title="Test Connection"
-                detail="Click to test" />
+                title="Test Connection" />
 
             <brls:DetailCell
                 id="setting/radarr/scan"
-                title="Scan LAN for Radarr"
-                detail="Auto-discover IP (:7878)" />
+                title="Scan LAN for Radarr" />
 
             <brls:Header
                 marginTop="20"
@@ -51,28 +46,23 @@
 
             <brls:InputCell
                 id="setting/sonarr/url"
-                title="Server URL"
-                hint="http://ip:8989" />
+                title="Server URL" />
 
             <brls:InputCell
                 id="setting/sonarr/key"
-                title="API Key"
-                hint="Sonarr API Key" />
+                title="API Key" />
 
             <brls:InputCell
                 id="setting/sonarr/root"
-                title="Root Folder"
-                hint="/tv" />
+                title="Root Folder" />
 
             <brls:DetailCell
                 id="setting/sonarr/test"
-                title="Test Connection"
-                detail="Click to test" />
+                title="Test Connection" />
 
             <brls:DetailCell
                 id="setting/sonarr/scan"
-                title="Scan LAN for Sonarr"
-                detail="Auto-discover IP (:8989)" />
+                title="Scan LAN for Sonarr" />
 
         </brls:Box>
     </brls:ScrollingFrame>

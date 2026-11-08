@@ -28,6 +28,10 @@ ArrSetting::ArrSetting() {
         [](std::string val) { ArrConfig::setRadarrRoot(val); },
         "/movies", "", 255);
 
+    // DetailCell exposes no "detail" XML attribute: set in code
+    this->btnRadarrTest->setDetailText("Click to test");
+    this->btnRadarrScan->setDetailText("Auto-discover IP (:7878)");
+
     this->btnRadarrTest->registerClickAction([this](...) {
         this->testRadarr();
         return true;
@@ -53,6 +57,9 @@ ArrSetting::ArrSetting() {
         "Root Folder", ArrConfig::getSonarrRoot(),
         [](std::string val) { ArrConfig::setSonarrRoot(val); },
         "/tv", "", 255);
+
+    this->btnSonarrTest->setDetailText("Click to test");
+    this->btnSonarrScan->setDetailText("Auto-discover IP (:8989)");
 
     this->btnSonarrTest->registerClickAction([this](...) {
         this->testSonarr();

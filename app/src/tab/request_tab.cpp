@@ -68,6 +68,10 @@ RequestTab::RequestTab() {
         },
         "Type movie or TV name...", "", 255);
 
+    // DetailCell/InputCell expose no "detail"/"hint" XML attributes: set in code
+    this->btnFilter->setDetailText("All");
+    this->btnSettings->setDetailText("Radarr/Sonarr");
+
     this->btnFilter->registerClickAction([this](...) {
         this->cycleFilter();
         return true;

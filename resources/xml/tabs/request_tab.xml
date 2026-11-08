@@ -15,21 +15,18 @@
         <brls:InputCell
             id="request/search/input"
             title="Search Media"
-            hint="Type movie or TV name..."
             grow="1.0"
             marginRight="12" />
 
         <brls:DetailCell
             id="request/search/filter"
             title="Type"
-            detail="All"
             width="140"
             marginRight="12" />
 
         <brls:DetailCell
             id="request/search/settings"
             title="Settings"
-            detail="Radarr/Sonarr"
             width="160" />
     </brls:Box>
 
