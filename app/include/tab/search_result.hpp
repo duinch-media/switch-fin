@@ -7,6 +7,7 @@
 #include <borealis.hpp>
 
 class SearchList;
+class ArrSearchList;
 
 class SearchResult : public brls::Box {
 public:
@@ -20,4 +21,6 @@ private:
     BRLS_BIND(SearchList, searchSeries, "search/series");
     BRLS_BIND(SearchList, searchEpisode, "search/episode");
     BRLS_BIND(SearchList, searchMusic, "search/music");
+    BRLS_BIND(ArrSearchList, searchRadarr, "search/radarr");
+    BRLS_BIND(ArrSearchList, searchSonarr, "search/sonarr");
 };

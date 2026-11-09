@@ -3,7 +3,7 @@
 #include "data/arr_client.hpp"
 #include "utils/arr_config.hpp"
 #include "utils/image.hpp"
-#include "utils/dialog.hpp"
+#include "utils/arr_actions.hpp"
 #include <borealis/core/thread.hpp>
 
 class RequestCardItem : public brls::Box {
@@ -166,49 +166,7 @@ void RequestTab::renderResults() {
 }
 
 void RequestTab::showRequestDialog(const domain::RequestMediaItem& item) {
-    std::string title = item.title + (item.year > 0 ? " (" + std::to_string(item.year) + ")" : "");
-    std::string overview = item.overview.empty() ? "(No overview available)" : item.overview;
-    if (overview.length() > 280) {
-        overview = overview.substr(0, 277) + "...";
-    }
-
-    if (item.status == domain::RequestStatus::AVAILABLE) {
-        Dialog::show(title + "\n\n" + overview + "\n\nStatus: Media is already in your library.");
-        return;
-    }
-    if (item.status == domain::RequestStatus::MONITORED) {
-        Dialog::show(title + "\n\n" + overview + "\n\nStatus: Already monitored in " +
-                     (item.type == domain::RequestType::MOVIE ? "Radarr" : "Sonarr") + ".");
-        return;
-    }
-
-    std::string targetApp = (item.type == domain::RequestType::MOVIE ? "Radarr" : "Sonarr");
-    auto* dialog = new brls::Dialog(title + "\n\n" + overview + "\n\nDo you want to request and download via " + targetApp + "?");
-
-    dialog->addButton("Cancel", []() {});
-    dialog->addButton("Request & Download", [this, item, targetApp]() {
-        brls::async([this, item, targetApp]() {
-            bool ok = false;
-            if (item.type == domain::RequestType::MOVIE) {
-                auto res = data::ArrClient::instance().requestMovie(item, 0, "");
-                ok = res.isOk();
-            } else {
-                auto res = data::ArrClient::instance().requestSeries(item, 0, "");
-                ok = res.isOk();
-            }
-
-            brls::sync([this, ok, title = item.title, targetApp]() {
-                if (ok) {
-                    Dialog::show("Success! \"" + title + "\" has been added to " + targetApp + " and search was triggered.");
-                    if (!this->lastQuery.empty()) {
-                        this->doSearch(this->lastQuery);
-                    }
-                } else {
-                    Dialog::show("Failed to request \"" + title + "\" on " + targetApp + ". Check connection settings.");
-                }
-            });
-        });
+    ArrActions::confirmRequest(item, [this]() {
+        if (!this->lastQuery.empty()) this->doSearch(this->lastQuery);
     });
-
-    dialog->open();
 }

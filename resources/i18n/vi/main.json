@@ -134,7 +134,9 @@
       "movie": "Phim",
       "music": "Nhạc",
       "series": "Phim Bộ",
-      "episode": "Tập"
+      "episode": "Tập",
+      "request_movie": "Yêu cầu phim (Radarr)",
+      "request_series": "Yêu cầu phim bộ (Sonarr)"
     }
   },
   "remote": {

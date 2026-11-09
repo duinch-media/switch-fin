@@ -44,15 +44,31 @@ HTTP::Header makeHeaders(const std::string& key, bool isJsonPost = false) {
     return h;
 }
 
+/// Card-sized poster: TMDB and TVDB serve multi-MB originals (~24 MB RGBA
+/// once decoded on Switch); both have small variants of the same image.
+std::string thumbnailUrl(std::string url) {
+    const std::string tmdbOriginal = "/t/p/original/";
+    size_t pos = url.find(tmdbOriginal);
+    if (pos != std::string::npos) return url.replace(pos, tmdbOriginal.size(), "/t/p/w342/");
+
+    // TVDB v4 artwork: <name>.jpg -> <name>_t.jpg
+    size_t dot = url.rfind('.');
+    if (url.find("thetvdb.com/banners/v4/") != std::string::npos && dot != std::string::npos &&
+        url.compare(dot - 2, 2, "_t") != 0) {
+        url.insert(dot, "_t");
+    }
+    return url;
+}
+
 std::string extractPoster(const nlohmann::json& j) {
     if (j.contains("images") && j["images"].is_array()) {
         for (const auto& img : j["images"]) {
             if (img.value("coverType", "") == "poster") {
-                return img.value("remoteUrl", img.value("url", ""));
+                return thumbnailUrl(img.value("remoteUrl", img.value("url", "")));
             }
         }
     }
-    return j.value("remotePoster", "");
+    return thumbnailUrl(j.value("remotePoster", ""));
 }
 
 domain::RequestStatus determineStatus(bool hasFile, int id, bool monitored) {

@@ -29,6 +29,19 @@
                 itemType="Series"
                 pageSize="16" />
 
+            <!-- Radarr/Sonarr: titles not in the library yet, requestable -->
+            <ArrSearchList
+                id="search/radarr"
+                title="@i18n/main/search/genres/request_movie"
+                height="350"
+                service="radarr" />
+
+            <ArrSearchList
+                id="search/sonarr"
+                title="@i18n/main/search/genres/request_series"
+                height="350"
+                service="sonarr" />
+
             <SearchList
                 id="search/episode"
                 title="@i18n/main/search/genres/episode"

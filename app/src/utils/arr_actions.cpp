@@ -4,114 +4,96 @@
 #include "utils/dialog.hpp"
 #include <borealis/core/thread.hpp>
 
-void ArrActions::handleMovieRequest(brls::View* parent, const std::string& title, int year) {
-    if (!ArrConfig::isRadarrConfigured()) {
-        Dialog::show("Radarr is not configured. Go to Settings -> Radarr/Sonarr to set it up.");
+namespace {
+
+using LookupResult = domain::Result<std::vector<domain::RequestMediaItem>>;
+
+std::string serviceName(domain::RequestType type) {
+    return type == domain::RequestType::MOVIE ? "Radarr" : "Sonarr";
+}
+
+/// Looks the title up on Radarr/Sonarr, picks the entry matching `year`
+/// (first result otherwise) and hands it to confirmRequest.
+void lookupAndConfirm(domain::RequestType type, const std::string& title, int year) {
+    bool configured =
+        type == domain::RequestType::MOVIE ? ArrConfig::isRadarrConfigured() : ArrConfig::isSonarrConfigured();
+    std::string service = serviceName(type);
+    if (!configured) {
+        Dialog::show(service + " is not configured. Go to Settings -> Radarr/Sonarr to set it up.");
         return;
     }
 
     brls::Application::blockInputs();
-    brls::async([title, year]() {
-        auto res = data::ArrClient::instance().searchMovie(title);
-        brls::sync([res, title, year]() {
+    brls::async([type, title, year, service]() {
+        auto& client = data::ArrClient::instance();
+        LookupResult res = type == domain::RequestType::MOVIE ? client.searchMovie(title) : client.searchSeries(title);
+        brls::sync([res, title, year, service]() {
             brls::Application::unblockInputs();
             if (!res.isOk()) {
-                Dialog::show("Failed to query Radarr: " + res.error().message);
+                Dialog::show("Failed to query " + service + ": " + res.error().message);
                 return;
             }
-
             const auto& list = res.value();
             if (list.empty()) {
-                Dialog::show("Movie not found in Radarr lookup for \"" + title + "\".");
+                Dialog::show("\"" + title + "\" was not found in " + service + " lookup.");
                 return;
             }
-
-            domain::RequestMediaItem match = list.front();
+            const domain::RequestMediaItem* match = &list.front();
             for (const auto& m : list) {
                 if (year > 0 && m.year == year) {
-                    match = m;
+                    match = &m;
                     break;
                 }
             }
-
-            if (match.status == domain::RequestStatus::AVAILABLE) {
-                Dialog::show(title + "\n\nStatus in Radarr: Available / Downloaded.");
-            } else if (match.status == domain::RequestStatus::MONITORED) {
-                Dialog::show(title + "\n\nStatus in Radarr: Monitored (Searching for downloads).");
-            } else {
-                std::string msg = "Request \"" + title + "\" on Radarr?\n\nRadarr will monitor and search for downloads.";
-                auto* dialog = new brls::Dialog(msg);
-                dialog->addButton("Cancel", []() {});
-                dialog->addButton("Request on Radarr", [match]() {
-                    brls::async([match]() {
-                        auto r = data::ArrClient::instance().requestMovie(match, 0, "");
-                        brls::sync([r, title = match.title]() {
-                            if (r.isOk()) {
-                                Dialog::show("Successfully requested \"" + title + "\" on Radarr!");
-                            } else {
-                                Dialog::show("Failed to request on Radarr: " + r.error().message);
-                            }
-                        });
-                    });
-                });
-                dialog->open();
-            }
+            ArrActions::confirmRequest(*match);
         });
     });
 }
 
+}  // namespace
+
+void ArrActions::handleMovieRequest(brls::View* parent, const std::string& title, int year) {
+    lookupAndConfirm(domain::RequestType::MOVIE, title, year);
+}
+
 void ArrActions::handleSeriesRequest(brls::View* parent, const std::string& title, int year) {
-    if (!ArrConfig::isSonarrConfigured()) {
-        Dialog::show("Sonarr is not configured. Go to Settings -> Radarr/Sonarr to set it up.");
+    lookupAndConfirm(domain::RequestType::TV, title, year);
+}
+
+void ArrActions::confirmRequest(const domain::RequestMediaItem& item, std::function<void()> onDone) {
+    std::string service = serviceName(item.type);
+    std::string title = item.title + (item.year > 0 ? " (" + std::to_string(item.year) + ")" : "");
+    std::string overview = item.overview.empty() ? "(No overview available)" : item.overview;
+    if (overview.length() > 280) overview = overview.substr(0, 277) + "...";
+    std::string header = title + "\n\n" + overview + "\n\n";
+
+    if (item.status == domain::RequestStatus::AVAILABLE) {
+        Dialog::show(header + "Status: already downloaded in " + service + ".");
+        return;
+    }
+    if (item.status == domain::RequestStatus::MONITORED) {
+        Dialog::show(header + "Status: monitored in " + service + " (searching for downloads).");
         return;
     }
 
-    brls::Application::blockInputs();
-    brls::async([title, year]() {
-        auto res = data::ArrClient::instance().searchSeries(title);
-        brls::sync([res, title, year]() {
-            brls::Application::unblockInputs();
-            if (!res.isOk()) {
-                Dialog::show("Failed to query Sonarr: " + res.error().message);
-                return;
-            }
-
-            const auto& list = res.value();
-            if (list.empty()) {
-                Dialog::show("Series not found in Sonarr lookup for \"" + title + "\".");
-                return;
-            }
-
-            domain::RequestMediaItem match = list.front();
-            for (const auto& s : list) {
-                if (year > 0 && s.year == year) {
-                    match = s;
-                    break;
+    auto* dialog = new brls::Dialog(header + "Request and download via " + service + "?");
+    dialog->addButton("Cancel", []() {});
+    dialog->addButton("Request", [item, service, onDone]() {
+        brls::async([item, service, onDone]() {
+            auto& client = data::ArrClient::instance();
+            auto res = item.type == domain::RequestType::MOVIE ? client.requestMovie(item, 0, "")
+                                                               : client.requestSeries(item, 0, "");
+            bool ok = res.isOk();
+            std::string error = ok ? "" : res.error().message;
+            brls::sync([ok, error, title = item.title, service, onDone]() {
+                if (!ok) {
+                    Dialog::show("Failed to request \"" + title + "\" on " + service + ": " + error);
+                    return;
                 }
-            }
-
-            if (match.status == domain::RequestStatus::AVAILABLE) {
-                Dialog::show(title + "\n\nStatus in Sonarr: Available / Downloaded.");
-            } else if (match.status == domain::RequestStatus::MONITORED) {
-                Dialog::show(title + "\n\nStatus in Sonarr: Monitored (Searching for downloads).");
-            } else {
-                std::string msg = "Request \"" + title + "\" on Sonarr?\n\nSonarr will monitor and search for missing episodes.";
-                auto* dialog = new brls::Dialog(msg);
-                dialog->addButton("Cancel", []() {});
-                dialog->addButton("Request on Sonarr", [match]() {
-                    brls::async([match]() {
-                        auto r = data::ArrClient::instance().requestSeries(match, 0, "");
-                        brls::sync([r, title = match.title]() {
-                            if (r.isOk()) {
-                                Dialog::show("Successfully requested \"" + title + "\" on Sonarr!");
-                            } else {
-                                Dialog::show("Failed to request on Sonarr: " + r.error().message);
-                            }
-                        });
-                    });
-                });
-                dialog->open();
-            }
+                Dialog::show("\"" + title + "\" was added to " + service + " and a search was started.");
+                if (onDone) onDone();
+            });
         });
     });
+    dialog->open();
 }

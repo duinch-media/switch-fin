@@ -15,6 +15,7 @@
 #include "view/video_progress_slider.hpp"
 #include "view/gallery_view.hpp"
 #include "view/search_list.hpp"
+#include "view/arr_search_list.hpp"
 #include "view/video_view.hpp"
 #include "view/selector_cell.hpp"
 #include "view/button_close.hpp"
@@ -99,6 +100,7 @@ int main(int argc, char* argv[]) {
     brls::Application::registerXMLView("RecylingVideo", RecylingVideo::create);
     brls::Application::registerXMLView("GalleryView", GalleryView::create);
     brls::Application::registerXMLView("SearchList", SearchList::create);
+    brls::Application::registerXMLView("ArrSearchList", ArrSearchList::create);
     brls::Application::registerXMLView("VideoProgressSlider", VideoProgressSlider::create);
 
     brls::Application::registerXMLView("HomeTab", HomeTab::create);

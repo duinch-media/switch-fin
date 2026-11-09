@@ -134,7 +134,9 @@
       "movie": "Movie",
       "music": "Music",
       "series": "Series",
-      "episode": "Episode"
+      "episode": "Episode",
+      "request_movie": "Request movie (Radarr)",
+      "request_series": "Request series (Sonarr)"
     }
   },
   "remote": {

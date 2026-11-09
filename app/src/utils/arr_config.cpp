@@ -72,8 +72,11 @@ void parseJsonData(const nlohmann::json& j) {
         if (r.contains("api_key")) s_data.radarrKey = cleanKey(r["api_key"].get<std::string>());
         else if (r.contains("apiKey")) s_data.radarrKey = cleanKey(r["apiKey"].get<std::string>());
         else if (r.contains("key")) s_data.radarrKey = cleanKey(r["key"].get<std::string>());
-        if (r.contains("root")) s_data.radarrRoot = r["root"].get<std::string>();
-        if (r.contains("profile")) s_data.radarrProfile = r["profile"].get<int>();
+        // arr_config.json writes rootFolder / qualityProfileId; root / profile are legacy
+        if (r.contains("rootFolder")) s_data.radarrRoot = r["rootFolder"].get<std::string>();
+        else if (r.contains("root")) s_data.radarrRoot = r["root"].get<std::string>();
+        if (r.contains("qualityProfileId")) s_data.radarrProfile = r["qualityProfileId"].get<int>();
+        else if (r.contains("profile")) s_data.radarrProfile = r["profile"].get<int>();
     }
     if (j.contains("sonarr") && j["sonarr"].is_object()) {
         const auto& s = j["sonarr"];
@@ -81,8 +84,11 @@ void parseJsonData(const nlohmann::json& j) {
         if (s.contains("api_key")) s_data.sonarrKey = cleanKey(s["api_key"].get<std::string>());
         else if (s.contains("apiKey")) s_data.sonarrKey = cleanKey(s["apiKey"].get<std::string>());
         else if (s.contains("key")) s_data.sonarrKey = cleanKey(s["key"].get<std::string>());
-        if (s.contains("root")) s_data.sonarrRoot = s["root"].get<std::string>();
-        if (s.contains("profile")) s_data.sonarrProfile = s["profile"].get<int>();
+        // arr_config.json writes rootFolder / qualityProfileId; root / profile are legacy
+        if (s.contains("rootFolder")) s_data.sonarrRoot = s["rootFolder"].get<std::string>();
+        else if (s.contains("root")) s_data.sonarrRoot = s["root"].get<std::string>();
+        if (s.contains("qualityProfileId")) s_data.sonarrProfile = s["qualityProfileId"].get<int>();
+        else if (s.contains("profile")) s_data.sonarrProfile = s["profile"].get<int>();
     }
 
     if (j.contains("radarrUrl")) s_data.radarrUrl = cleanUrl(j["radarrUrl"].get<std::string>());
