@@ -1,60 +1,12 @@
 #include "view/arr_search_list.hpp"
 #include "view/h_recycling.hpp"
 #include "view/video_card.hpp"
-#include "view/svg_image.hpp"
+#include "view/arr_source.hpp"
 #include "data/arr_client.hpp"
-#include "utils/arr_actions.hpp"
 #include "utils/arr_config.hpp"
 #include <borealis/core/thread.hpp>
 
-namespace {
-
 using RequestItems = std::vector<domain::RequestMediaItem>;
-
-std::string statusText(domain::RequestStatus status) {
-    switch (status) {
-    case domain::RequestStatus::REQUESTED:
-        return "Requested";
-    case domain::RequestStatus::MONITORED:
-        return "Monitored";
-    case domain::RequestStatus::DOWNLOADING:
-        return "Downloading";
-    default:
-        return "Not in library";
-    }
-}
-
-class ArrDataSource : public RecyclingGridDataSource {
-public:
-    ArrDataSource(RequestItems items, std::function<void()> onRequested)
-        : list(std::move(items)), onRequested(std::move(onRequested)) {}
-
-    size_t getItemCount() override { return this->list.size(); }
-
-    RecyclingGridItem* cellForRow(RecyclingView* recycler, size_t index) override {
-        auto* cell = dynamic_cast<MediaCardCell*>(recycler->dequeueReusableCell("Cell"));
-        const auto& item = this->list.at(index);
-        cell->labelTitle->setText(item.title);
-        std::string ext = statusText(item.status);
-        if (item.year > 0) ext = std::to_string(item.year) + " · " + ext;
-        cell->labelExt->setText(ext);
-        cell->badgeTopRight->setVisibility(brls::Visibility::GONE);
-        if (!item.posterUrl.empty()) Image::with(cell->picture, item.posterUrl);
-        return cell;
-    }
-
-    void onItemSelected(brls::Box* recycler, size_t index) override {
-        ArrActions::confirmRequest(this->list.at(index), this->onRequested);
-    }
-
-    void clearData() override { this->list.clear(); }
-
-private:
-    RequestItems list;
-    std::function<void()> onRequested;
-};
-
-}  // namespace
 
 ArrSearchList::ArrSearchList() {
     brls::Logger::debug("View ArrSearchList: create");

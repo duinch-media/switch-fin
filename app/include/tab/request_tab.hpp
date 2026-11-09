@@ -4,6 +4,8 @@
 #include "domain/models/request_item.hpp"
 #include <vector>
 
+class RecyclingGrid;
+
 class RequestTab : public AttachedView {
 public:
     RequestTab();
@@ -17,7 +19,7 @@ private:
     BRLS_BIND(brls::DetailCell, btnFilter, "request/search/filter");
     BRLS_BIND(brls::DetailCell, btnSettings, "request/search/settings");
     BRLS_BIND(brls::Label, labelStatus, "request/status/label");
-    BRLS_BIND(brls::Box, gridContainer, "request/grid/container");
+    BRLS_BIND(RecyclingGrid, grid, "request/grid");
 
     enum class FilterType {
         ALL = 0,
@@ -32,5 +34,4 @@ private:
     void cycleFilter();
     void doSearch(const std::string& query);
     void renderResults();
-    void showRequestDialog(const domain::RequestMediaItem& item);
 };

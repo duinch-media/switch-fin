@@ -37,21 +37,12 @@
         marginBottom="12"
         text="Enter a title above to search Radarr &amp; Sonarr" />
 
-    <brls:ScrollingFrame
-        id="request/scroll"
-        width="auto"
-        height="auto"
-        grow="1.0">
-
-        <brls:Box
-            id="request/grid/container"
-            width="100%"
-            height="auto"
-            axis="row"
-            direction="leftToRight"
-            alignItems="flexStart"
-            justifyContent="flexStart">
-        </brls:Box>
-    </brls:ScrollingFrame>
+    <!-- poster grid: wraps into rows (a plain row Box does not wrap) -->
+    <RecyclingGrid
+        id="request/grid"
+        grow="1"
+        wireframe="false"
+        spanCount="@style/app/grid/6"
+        itemHeight="@style/app/video/height" />
 
 </brls:Box>

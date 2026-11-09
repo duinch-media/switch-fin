@@ -2,59 +2,18 @@
 #include "tab/arr_setting.hpp"
 #include "data/arr_client.hpp"
 #include "utils/arr_config.hpp"
-#include "utils/image.hpp"
-#include "utils/arr_actions.hpp"
+#include "view/arr_source.hpp"
+#include "view/recycling_grid.hpp"
+#include "view/video_card.hpp"
 #include <borealis/core/thread.hpp>
 
-class RequestCardItem : public brls::Box {
-public:
-    RequestCardItem(const domain::RequestMediaItem& item, std::function<void()> onClick) {
-        this->inflateFromXMLRes("xml/view/request_card.xml");
-        this->setFocusable(true);
+namespace {
 
-        this->labelTitle->setText(item.title);
-        this->labelYear->setText(item.year > 0 ? std::to_string(item.year) : "");
-        this->labelType->setText(item.type == domain::RequestType::MOVIE ? "MOVIE" : "TV");
+const char* HINT_TEXT = "Enter a title above to search Radarr & Sonarr";
 
-        if (item.status == domain::RequestStatus::AVAILABLE) {
-            this->labelStatus->setText("Available");
-            this->labelStatus->setTextColor(nvgRGB(46, 204, 113));
-        } else if (item.status == domain::RequestStatus::MONITORED) {
-            this->labelStatus->setText("Monitored");
-            this->labelStatus->setTextColor(nvgRGB(52, 152, 219));
-        } else if (item.status == domain::RequestStatus::REQUESTED) {
-            this->labelStatus->setText("Requested");
-            this->labelStatus->setTextColor(nvgRGB(241, 196, 15));
-        } else {
-            this->labelStatus->setText("Not Added");
-            this->labelStatus->setTextColor(nvgRGB(149, 165, 166));
-        }
+}  // namespace
 
-        if (!item.posterUrl.empty()) {
-            Image::with(this->imagePoster, item.posterUrl);
-        }
-
-        this->registerClickAction([onClick](...) {
-            if (onClick) onClick();
-            return true;
-        });
-    }
-
-    ~RequestCardItem() override {
-        Image::cancel(this->imagePoster);
-    }
-
-private:
-    BRLS_BIND(brls::Image, imagePoster, "request/card/poster");
-    BRLS_BIND(brls::Label, labelType, "request/card/type");
-    BRLS_BIND(brls::Label, labelStatus, "request/card/status");
-    BRLS_BIND(brls::Label, labelTitle, "request/card/title");
-    BRLS_BIND(brls::Label, labelYear, "request/card/year");
-};
-
-brls::View* RequestTab::create() {
-    return new RequestTab();
-}
+brls::View* RequestTab::create() { return new RequestTab(); }
 
 RequestTab::RequestTab() {
     this->inflateFromXMLRes("xml/tabs/request_tab.xml");
@@ -81,12 +40,15 @@ RequestTab::RequestTab() {
         this->present(new ArrSetting());
         return true;
     });
+
+    this->grid->registerCell("Cell", MediaCardCell::create);
+    // RecyclingGrid starts on skeleton cards: show the hint until a search runs
+    this->grid->setEmpty(HINT_TEXT, "icon/ico-search.svg");
 }
 
 RequestTab::~RequestTab() = default;
 
-void RequestTab::onCreate() {
-}
+void RequestTab::onCreate() {}
 
 void RequestTab::cycleFilter() {
     if (this->currentFilter == FilterType::ALL) {
@@ -104,69 +66,64 @@ void RequestTab::cycleFilter() {
 
 void RequestTab::doSearch(const std::string& query) {
     this->lastQuery = query;
-    bool searchRadarr = (this->currentFilter == FilterType::ALL || this->currentFilter == FilterType::MOVIES);
-    bool searchSonarr = (this->currentFilter == FilterType::ALL || this->currentFilter == FilterType::TV);
-
-    if (searchRadarr && !ArrConfig::isRadarrConfigured() && !searchSonarr) {
-        this->labelStatus->setText("Radarr is not configured. Click Settings to configure.");
-        return;
-    }
-    if (searchSonarr && !ArrConfig::isSonarrConfigured() && !searchRadarr) {
-        this->labelStatus->setText("Sonarr is not configured. Click Settings to configure.");
+    bool radarr = ArrConfig::isRadarrConfigured();
+    bool sonarr = ArrConfig::isSonarrConfigured();
+    if (!radarr && !sonarr) {
+        this->labelStatus->setText("Radarr and Sonarr are not configured. Click Settings to configure.");
         return;
     }
 
-    this->labelStatus->setText("Searching Radarr & Sonarr for \"" + query + "\"...");
-    this->gridContainer->clearViews();
+    // both services are always queried: the filter only narrows what is shown,
+    // so switching it never needs a new search
+    this->labelStatus->setText("Searching for \"" + query + "\"...");
+    this->grid->showSkeleton();
 
-    brls::async([this, query, searchRadarr, searchSonarr]() {
-        std::vector<domain::RequestMediaItem> allResults;
-
-        if (searchRadarr && ArrConfig::isRadarrConfigured()) {
-            auto mRes = data::ArrClient::instance().searchMovie(query);
-            if (mRes.isOk()) {
-                const auto& movies = mRes.value();
-                allResults.insert(allResults.end(), movies.begin(), movies.end());
-            }
-        }
-
-        if (searchSonarr && ArrConfig::isSonarrConfigured()) {
-            auto sRes = data::ArrClient::instance().searchSeries(query);
-            if (sRes.isOk()) {
-                const auto& series = sRes.value();
-                allResults.insert(allResults.end(), series.begin(), series.end());
-            }
-        }
-
-        brls::sync([this, query, results = std::move(allResults)]() mutable {
-            this->currentResults = std::move(results);
-            if (this->currentResults.empty()) {
-                this->labelStatus->setText("No results found for \"" + query + "\".");
+    ASYNC_RETAIN
+    brls::async([ASYNC_TOKEN, query, radarr, sonarr]() {
+        auto& client = data::ArrClient::instance();
+        std::vector<domain::RequestMediaItem> results;
+        std::string errors;
+        auto collect = [&](const std::string& service, const auto& res) {
+            if (res.isOk()) {
+                results.insert(results.end(), res.value().begin(), res.value().end());
             } else {
-                this->labelStatus->setText(
-                    "Found " + std::to_string(this->currentResults.size()) + " results for \"" + query + "\".");
+                errors += (errors.empty() ? "" : " | ") + service + ": " + res.error().message;
             }
+        };
+        if (radarr) collect("Radarr", client.searchMovie(query));
+        if (sonarr) collect("Sonarr", client.searchSeries(query));
+
+        brls::sync([ASYNC_TOKEN, query, errors, results]() mutable {
+            ASYNC_RELEASE
+            this->currentResults = std::move(results);
+            std::string status = this->currentResults.empty()
+                                     ? "No results found for \"" + query + "\"."
+                                     : "Found " + std::to_string(this->currentResults.size()) + " results for \"" +
+                                           query + "\".";
+            // an unreachable server must not look like "no results"
+            if (!errors.empty()) status += "  Error: " + errors;
+            this->labelStatus->setText(status);
             this->renderResults();
         });
     });
 }
 
 void RequestTab::renderResults() {
-    this->gridContainer->clearViews();
-    for (size_t i = 0; i < this->currentResults.size(); ++i) {
-        const auto& item = this->currentResults[i];
+    std::vector<domain::RequestMediaItem> shown;
+    for (const auto& item : this->currentResults) {
         if (this->currentFilter == FilterType::MOVIES && item.type != domain::RequestType::MOVIE) continue;
         if (this->currentFilter == FilterType::TV && item.type != domain::RequestType::TV) continue;
-
-        auto* card = new RequestCardItem(item, [this, item]() {
-            this->showRequestDialog(item);
-        });
-        this->gridContainer->addView(card);
+        shown.push_back(item);
     }
-}
+    if (shown.empty()) {
+        this->grid->setEmpty(this->lastQuery.empty() ? HINT_TEXT : "No results", "icon/ico-search.svg");
+        return;
+    }
 
-void RequestTab::showRequestDialog(const domain::RequestMediaItem& item) {
-    ArrActions::confirmRequest(item, [this]() {
+    // statuses change after a request: search again to refresh them
+    auto refresh = [this]() {
         if (!this->lastQuery.empty()) this->doSearch(this->lastQuery);
-    });
+    };
+    bool mixed = this->currentFilter == FilterType::ALL;
+    this->grid->setDataSource(new ArrDataSource(std::move(shown), refresh, mixed));
 }
