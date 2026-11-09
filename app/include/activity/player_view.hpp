@@ -7,6 +7,7 @@
 #include <borealis.hpp>
 #include <utils/event.hpp>
 #include <api/jellyfin/media.hpp>
+#include "telemetry/playback_tracker.hpp"
 
 class VideoView;
 
@@ -57,4 +58,5 @@ private:
     brls::VoidEvent::Subscription settingSubscribeID;
     MPVCustomEvent::Subscription customEventSubscribeID;
     VideoView* view = nullptr;
+    telemetry::PlaybackTracker tracker;
 };

@@ -105,6 +105,8 @@ public:
 
     void reset();
 
+    int64_t getCacheSpeedBps() const { return this->cache_speed; }
+
     MPVMap supportCodecs();
 
     // core states
