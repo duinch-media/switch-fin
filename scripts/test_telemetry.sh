@@ -6,5 +6,5 @@ out="${TMPDIR:-/tmp}/switchfin_telemetry_test"
 ${CXX:-clang++} -std=c++17 -Wall -Wextra -Iapp/include -Ilibrary/borealis/library/include/borealis/extern \
   tests/telemetry/test_health.cpp \
   app/src/telemetry/health_queue.cpp app/src/telemetry/health_uploader.cpp \
-  app/src/telemetry/health_config.cpp -o "$out"
+  app/src/telemetry/health_config.cpp app/src/telemetry/health_snapshot.cpp -o "$out"
 "$out"

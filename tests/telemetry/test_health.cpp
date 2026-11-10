@@ -3,12 +3,16 @@
 #include <cstdio>
 #include <fstream>
 #include <iostream>
+#include <iterator>
 #include <regex>
 #include <string>
 #include <vector>
 
+#include <nlohmann/json.hpp>
+
 #include "telemetry/health_config.hpp"
 #include "telemetry/health_queue.hpp"
+#include "telemetry/health_snapshot.hpp"
 #include "telemetry/health_uploader.hpp"
 
 using namespace telemetry;
@@ -159,12 +163,60 @@ static void deviceId() {
     CHECK(std::regex_match(loadOrCreateDeviceId(tmp("dev")), re));
 }
 
+static std::string slurp(const std::string& p) {
+    std::ifstream in(p);
+    return std::string((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+}
+static bool exists(const std::string& p) { return std::ifstream(p).good(); }
+
+static void crashRecovery() {
+    const std::string snap = tmp("snap");
+    const std::string payload =
+        R"({"event":"playback_session","session_id":"s1","ts_end":"2026-01-01T00:00:30Z","end_reason":"user_exit","metrics":{"play_ms":30000}})";
+    std::remove(tmp("sq").c_str());
+    HealthQueue q(tmp("sq"));
+
+    // Snapshots are replaced atomically; the last write wins and leaves no temp file behind.
+    CHECK(writeSnapshot(snap, R"({"event":"playback_session","session_id":"old"})"));
+    CHECK(writeSnapshot(snap, payload));
+    CHECK(slurp(snap) == payload);
+    CHECK(!exists(snap + ".tmp"));
+
+    // Next launch: queued as a crash, original ts_end kept, snapshot removed.
+    CHECK(recoverSnapshot(snap, q));
+    CHECK(!exists(snap));
+    CHECK(q.size() == 1);
+    auto j = nlohmann::json::parse(q.peek(1)[0]);
+    CHECK(j["end_reason"] == "crash");
+    CHECK(j["ts_end"] == "2026-01-01T00:00:30Z");
+    CHECK(j["session_id"] == "s1");
+
+    // Clean finish removed it already: nothing to recover.
+    CHECK(!recoverSnapshot(snap, q));
+    CHECK(q.size() == 1);
+
+    // Corrupt or foreign files are discarded, never queued.
+    write(snap, "{truncated");
+    CHECK(!recoverSnapshot(snap, q));
+    CHECK(!exists(snap));
+    write(snap, R"({"event":"something_else"})");
+    CHECK(!recoverSnapshot(snap, q));
+    CHECK(!exists(snap));
+    CHECK(q.size() == 1);
+
+    writeSnapshot(snap, payload);
+    clearSnapshot(snap);
+    CHECK(!exists(snap));
+    CHECK(!writeSnapshot("/nonexistent_dir/x", payload));
+}
+
 int main() {
     queueBasics();
     queueCaps();
     uploaderContract();
     configLoading();
     deviceId();
+    crashRecovery();
     if (failures) {
         std::cerr << failures << " check(s) failed\n";
         return 1;

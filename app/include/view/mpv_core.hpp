@@ -107,6 +107,9 @@ public:
 
     int64_t getCacheSpeedBps() const { return this->cache_speed; }
 
+    /// Time spent in init() (mpv_create until the render context exists), for app-health.
+    int64_t getInitMs() const { return this->init_ms; }
+
     MPVMap supportCodecs();
 
     // core states
@@ -172,6 +175,8 @@ private:
     bool video_stopped = true;
     bool video_paused = false;
     int64_t cache_speed = 0;  // Bps
+    int64_t init_ms = 0;
+    bool seek_pending = false;  // MPV_EVENT_SEEK seen, waiting for its PLAYBACK_RESTART
 
 #ifdef MPV_SW_RENDER
     const int PIXCEL_SIZE = 4;

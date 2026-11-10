@@ -7,6 +7,7 @@
 #include <borealis/core/logger.hpp>
 
 #include "api/http.hpp"
+#include "telemetry/health_snapshot.hpp"
 #include "telemetry/health_uploader.hpp"
 #include "utils/config.hpp"
 #include "utils/misc.hpp"
@@ -47,6 +48,11 @@ void TelemetryClient::init(const std::string& configDir) {
     this->config = loadHealthConfig(healthConfigPaths(configDir));
     this->deviceId = loadOrCreateDeviceId(configDir + "/health_device_id");
     this->queue = std::make_unique<HealthQueue>(configDir + "/health_pending.ndjson");
+    this->snapshotPath = configDir + "/health_current.json";
+    // Runs at launch, never during playback: a leftover snapshot is a session that crashed.
+    if (recoverSnapshot(this->snapshotPath, *this->queue)) {
+        brls::Logger::info("Telemetry: recovered a session that did not finish cleanly");
+    }
     brls::Logger::info("Telemetry: {} ({} queued from earlier runs)",
         this->config.enabled ? "reporting to " + this->config.endpoint : "no health.json, recording locally only",
         this->queue->size());
@@ -102,9 +108,19 @@ void TelemetryClient::recordPlayback(const PlaybackEvent& event) {
     if (!this->queue) return;  // init() not called (e.g. very early exit): drop silently
     try {
         this->queue->append(this->buildPayload(event).dump());
+        clearSnapshot(this->snapshotPath);  // after the append: a crash in between duplicates, never loses
         brls::Logger::info("Telemetry: queued playback session {}", event.session_id);
     } catch (const std::exception& e) {
         brls::Logger::warning("Telemetry: cannot queue event: {}", e.what());
+    }
+}
+
+void TelemetryClient::saveSnapshot(const PlaybackEvent& event) {
+    if (!this->queue) return;
+    try {
+        writeSnapshot(this->snapshotPath, this->buildPayload(event).dump());
+    } catch (const std::exception& e) {
+        brls::Logger::warning("Telemetry: cannot save snapshot: {}", e.what());
     }
 }
 

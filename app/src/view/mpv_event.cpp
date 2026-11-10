@@ -43,12 +43,21 @@ void MPVCore::eventMainLoop() {
             break;
         case MPV_EVENT_START_FILE:
             brls::Logger::info("MPVCore => EVENT_START_FILE");
+            this->seek_pending = false;
             mpvCoreEvent.fire(MpvEventEnum::START_FILE);
             mpvCoreEvent.fire(MpvEventEnum::LOADING_START);
+            break;
+        case MPV_EVENT_SEEK:
+            this->seek_pending = true;
+            mpvCoreEvent.fire(MpvEventEnum::MPV_SEEK_START);
             break;
         case MPV_EVENT_PLAYBACK_RESTART:
             brls::Logger::info("MPVCore => EVENT_PLAYBACK_RESTART");
             this->video_stopped = false;
+            if (this->seek_pending) {
+                this->seek_pending = false;
+                mpvCoreEvent.fire(MpvEventEnum::MPV_SEEK_END);
+            }
             if (this->isPaused())
                 mpvCoreEvent.fire(MpvEventEnum::MPV_PAUSE);
             else
@@ -128,6 +137,10 @@ void MPVCore::eventMainLoop() {
             case 5:  // cache-speed
                 this->cache_speed = *(int64_t *)prop->data;
                 mpvCoreEvent.fire(MpvEventEnum::CACHE_SPEED_CHANGE);
+                break;
+            case 11:  // paused-for-cache
+                mpvCoreEvent.fire(*(int *)prop->data ? MpvEventEnum::MPV_BUFFERING_START
+                                                     : MpvEventEnum::MPV_BUFFERING_END);
                 break;
             case 9:  // speed
                 this->video_speed = *(double *)prop->data;

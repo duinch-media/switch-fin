@@ -1,5 +1,6 @@
 #include "activity/player_view.hpp"
 #include "api/jellyfin.hpp"
+#include "telemetry/player_telemetry_hooks.hpp"
 #include "utils/dialog.hpp"
 #include "utils/misc.hpp"
 #include "view/danmaku_core.hpp"
@@ -38,37 +39,25 @@ PlayerView::PlayerView(const jellyfin::Item& item, const uint64_t seekTicks, con
     eventSubscribeID = mpv.getEvent()->subscribe([this](MpvEventEnum event) {
         auto& mpv = MPVCore::instance();
         // brls::Logger::info("mpv event => : {}", event);
+        telemetry::onMpvEvent(this->tracker, event);
         switch (event) {
         case MpvEventEnum::MPV_RESUME:
-            this->tracker.onResume();
             this->reportPlay();
             view->getProfile()->init(this->playMethod);
             break;
         case MpvEventEnum::MPV_PAUSE:
-            this->tracker.onPause();
             this->reportPlay(true);
             break;
-        case MpvEventEnum::LOADING_START:
-            this->tracker.onStallStart();
-            break;
         case MpvEventEnum::LOADING_END:
-            this->tracker.onFirstFrame();
-            this->tracker.onStallEnd();
             this->reportStart();
             break;
-        case MpvEventEnum::CACHE_SPEED_CHANGE:
-            this->tracker.sampleSpeed(mpv.getCacheSpeedBps());
-            break;
         case MpvEventEnum::MPV_STOP:
-            this->tracker.finish("user_exit");
             this->reportStop();
             break;
         case MpvEventEnum::MPV_FILE_ERROR:
-            this->tracker.finish("error");
             this->reportStop();
             break;
         case MpvEventEnum::END_OF_FILE:
-            this->tracker.finish("eof");
             this->reportStop();
             break;
         case MpvEventEnum::MPV_LOADED: {
@@ -327,11 +316,14 @@ void PlayerView::playMedia(const uint64_t seekTicks) {
     if (PlayerSetting::selectedAudio > 0) param.push_back({"AudioStreamIndex", PlayerSetting::selectedAudio});
     if (PlayerSetting::selectedSubtitle > 0) param.push_back({"SubtitleStreamIndex", PlayerSetting::selectedSubtitle});
 
+    const auto apiStart = std::chrono::steady_clock::now();
     ASYNC_RETAIN
     jellyfin::postJSON(
         param,
-        [ASYNC_TOKEN, seekTicks](const jellyfin::PlaybackResult& r) {
+        [ASYNC_TOKEN, seekTicks, apiStart](const jellyfin::PlaybackResult& r) {
             ASYNC_RELEASE
+            const int64_t apiMs = std::chrono::duration_cast<std::chrono::milliseconds>(
+                std::chrono::steady_clock::now() - apiStart).count();
 
             if (r.MediaSources.empty()) {
                 Dialog::show(r.ErrorCode, []() { VideoView::close(); });
@@ -353,13 +345,9 @@ void PlayerView::playMedia(const uint64_t seekTicks) {
                 if (seekTicks > 0) ssextra << ",start=" << misc::sec2Time(seekTicks / jellyfin::PLAYTICKS);
                 if (item.IsInfiniteStream) view->hideVideoProgressSlider();
 
-                auto startTracker = [this](const std::string& sessId) {
-                    jellyfin::Stream vStream;
-                    for (const auto& s : this->stream.MediaStreams) {
-                        if (s.Type == jellyfin::streamTypeVideo) { vStream = s; break; }
-                    }
-                    this->tracker.start(sessId.empty() ? misc::randHex(16) : sessId,
-                                        this->playMethod, vStream, this->stream.Bitrate);
+                auto startTracker = [this, apiMs](const std::string& sessId) {
+                    telemetry::startPlayback(this->tracker, sessId.empty() ? misc::randHex(16) : sessId,
+                                             this->playMethod, this->stream, apiMs);
                 };
 
                 if (item.IsRemote && MPVCore::FORCE_DIRECTPLAY) {

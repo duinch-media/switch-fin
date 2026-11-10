@@ -59,6 +59,9 @@ public:
     void init(const std::string& configDir);
     /// Queue a finished playback session. Never touches the network.
     void recordPlayback(const PlaybackEvent& event);
+    /// Persist an in-progress session so a crash can still be reported at the next launch.
+    /// Local file write only; call it sparingly (start, pause, every ~30 s).
+    void saveSnapshot(const PlaybackEvent& event);
     /// Leave-player trigger: submit the queue on a worker thread.
     void flushAsync();
     /// App-exit trigger: synchronous, short deadline. Call before the thread pool stops.
@@ -73,6 +76,7 @@ private:
     HealthConfig config;
     std::string deviceId;
     std::unique_ptr<HealthQueue> queue;
+    std::string snapshotPath;
     std::atomic<bool> busy{false};
 };
 

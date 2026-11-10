@@ -3,6 +3,7 @@
 #include "utils/config.hpp"
 #include "utils/misc.hpp"
 #include <fmt/ranges.h>
+#include <chrono>
 
 extern void configureMpvPlatformBuffering(mpv_handle *mpv);
 
@@ -100,6 +101,7 @@ void MPVCore::init() {
     auto env = static_cast<JNIEnv *>(SDL_AndroidGetJNIEnv());
     if (!env->GetJavaVM(&g_vm) && g_vm) av_jni_set_java_vm(g_vm, NULL);
 #endif
+    const auto initStart = std::chrono::steady_clock::now();
     this->mpv = mpv_create();
     if (!mpv) brls::fatal("Error Create mpv Handle");
 
@@ -194,6 +196,7 @@ void MPVCore::init() {
     check_error(mpv_observe_property(mpv, 5, "cache-speed", MPV_FORMAT_INT64));
     check_error(mpv_observe_property(mpv, 9, "speed", MPV_FORMAT_DOUBLE));
     check_error(mpv_observe_property(mpv, 10, "volume", MPV_FORMAT_INT64));
+    check_error(mpv_observe_property(mpv, 11, "paused-for-cache", MPV_FORMAT_FLAG));
 
 #ifdef ANDROID
     int64_t wid = getNativeSurface();
@@ -282,6 +285,8 @@ void MPVCore::init() {
         brls::fatal("failed to initialize mpv context");
     }
 #endif
+    this->init_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::steady_clock::now() - initStart).count();
 #ifdef BOREALIS_USE_D3D11
     misc::initCrashDump();
 #endif

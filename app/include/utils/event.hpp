@@ -22,6 +22,10 @@ typedef enum MpvEventEnum {
     VIDEO_UNMUTE,
     MPV_FILE_ERROR,
     RESET,
+    MPV_SEEK_START,
+    MPV_SEEK_END,
+    MPV_BUFFERING_START,  // paused-for-cache became true
+    MPV_BUFFERING_END,
 } MpvEventEnum;
 
 typedef brls::Event<MpvEventEnum> MPVEvent;
