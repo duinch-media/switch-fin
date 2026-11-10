@@ -14,12 +14,14 @@
 #include "view/video_source.hpp"
 #include "utils/dialog.hpp"
 #include "utils/arr_actions.hpp"
+#include "telemetry/telemetry_client.hpp"
 #include <fmt/ranges.h>
 
 using namespace brls::literals;  // for _i18n
 
 MediaSeries::MediaSeries(const jellyfin::Episode& item) {
     brls::Logger::debug("Tab MediaSeries: create");
+    telemetry::TelemetryClient::instance().recordScreenView("series_detail");
     // Inflate the tab from the XML file
     this->inflateFromXMLRes("xml/tabs/series.xml");
 

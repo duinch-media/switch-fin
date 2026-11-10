@@ -26,6 +26,7 @@
 #include "api/analytics.hpp"
 #include "api/jellyfin.hpp"
 #include "utils/dialog.hpp"
+#include "telemetry/telemetry_client.hpp"
 #ifdef __SWITCH__
 #include "utils/overclock.hpp"
 #endif
@@ -94,6 +95,7 @@ SettingTab::SettingTab() {
     // Inflate the tab from the XML file
     this->inflateFromXMLRes("xml/tabs/settings.xml");
     GA("open_setting");
+    telemetry::TelemetryClient::instance().recordScreenView("settings");
 
     this->registerBoolXMLAttribute("hideStatus", [this](bool value) {
         auto visibility = value ? brls::Visibility::GONE : brls::Visibility::VISIBLE;
@@ -133,10 +135,7 @@ void SettingTab::onCreate() {
         });
 
         if (conf.isAdmin()) {
-            this->btnDashboard->registerClickAction([this](...) {
-                this->present(new Dashboard());
-                return true;
-            });
+            this->btnDashboard->registerClickAction([this](...) { this->present(new Dashboard()); return true; });
         } else {
             this->btnDashboard->setVisibility(brls::Visibility::GONE);
         }
@@ -362,23 +361,9 @@ void SettingTab::onCreate() {
     // App language
     int langIndex = conf.getOptionIndex(AppConfig::APP_LANG);
     selectorLang->init("main/setting/others/language/header"_i18n,
-        {
-            "main/setting/others/language/auto"_i18n,
-            "English",
-            "简体中文",
-            "繁體中文",
-            "日本語",
-            "한국어",
-            "Русский",
-            "Deutsch",
-            "Français",
-            "Español",
-            "Português",
-            "Czech",
-            "Українська",
-            "Türkçe",
-            "Tiếng việt",
-        },
+        {"main/setting/others/language/auto"_i18n, "English", "简体中文", "繁體中文",
+         "日本語", "한국어", "Русский", "Deutsch", "Français", "Español",
+         "Português", "Czech", "Українська", "Türkçe", "Tiếng việt"},
         langIndex, [langIndex](int selected) {
             if (langIndex == selected) return;
             auto& conf = AppConfig::instance();
@@ -389,11 +374,7 @@ void SettingTab::onCreate() {
     // App theme
     int themeIndex = conf.getOptionIndex(AppConfig::APP_THEME);
     selectorTheme->init("main/setting/others/theme/header"_i18n,
-        {
-            "main/setting/others/theme/1"_i18n,
-            "main/setting/others/theme/2"_i18n,
-            "main/setting/others/theme/3"_i18n,
-        },
+        {"main/setting/others/theme/1"_i18n, "main/setting/others/theme/2"_i18n, "main/setting/others/theme/3"_i18n},
         themeIndex, [themeIndex](int selected) {
             if (themeIndex == selected) return;
             auto& conf = AppConfig::instance();

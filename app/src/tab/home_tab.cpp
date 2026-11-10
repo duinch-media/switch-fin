@@ -6,11 +6,13 @@
 #include "view/recyling_video.hpp"
 #include "api/jellyfin.hpp"
 #include "utils/keybind.hpp"
+#include "telemetry/telemetry_client.hpp"
 
 using namespace brls::literals;  // for _i18n
 
 HomeTab::HomeTab() {
     brls::Logger::debug("Tab HomeTab: create");
+    telemetry::TelemetryClient::instance().recordScreenView("home");
     // Inflate the tab from the XML file
     this->inflateFromXMLRes("xml/tabs/home.xml");
 

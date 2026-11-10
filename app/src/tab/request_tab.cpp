@@ -6,6 +6,7 @@
 #include "view/recycling_grid.hpp"
 #include "view/video_card.hpp"
 #include <borealis/core/thread.hpp>
+#include "telemetry/telemetry_client.hpp"
 
 namespace {
 
@@ -17,6 +18,7 @@ brls::View* RequestTab::create() { return new RequestTab(); }
 
 RequestTab::RequestTab() {
     this->inflateFromXMLRes("xml/tabs/request_tab.xml");
+    telemetry::TelemetryClient::instance().recordScreenView("request");
 
     this->inputSearch->init(
         "Search Media", "",

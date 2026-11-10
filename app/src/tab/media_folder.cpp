@@ -10,6 +10,7 @@
 #include "api/jellyfin.hpp"
 #include "utils/image.hpp"
 #include "utils/keybind.hpp"
+#include "telemetry/telemetry_client.hpp"
 
 using namespace brls::literals;  // for _i18n
 
@@ -102,6 +103,7 @@ MediaFolders::MediaFolders() {
     // Inflate the tab from the XML file
     this->inflateFromXMLRes("xml/tabs/media_folder.xml");
     brls::Logger::debug("MediaFolders: create");
+    telemetry::TelemetryClient::instance().recordScreenView("media_folders");
     this->recycler->registerCell("Cell", MediaFolderCell::create);
 }
 

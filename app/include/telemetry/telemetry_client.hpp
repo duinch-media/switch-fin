@@ -8,6 +8,7 @@
 
 #include "telemetry/health_config.hpp"
 #include "telemetry/health_queue.hpp"
+#include "telemetry/telemetry_event.hpp"
 
 namespace telemetry {
 
@@ -48,8 +49,7 @@ struct PlaybackEvent {
 
 /// Client side of the app-health contract (see the app-health repo, docs/schema.md):
 /// events are queued on disk and submitted in batches only when the player is left,
-/// when the app exits, and (for leftovers) at the next launch. Nothing here is called
-/// per frame and nothing blocks playback.
+/// when the app exits, and (for leftovers) at the next launch.
 class TelemetryClient {
 public:
     static TelemetryClient& instance();
@@ -57,20 +57,43 @@ public:
     /// Load health.json and the install id, open the queue, then retry leftovers
     /// from earlier runs in the background. Safe to call once at startup.
     void init(const std::string& configDir);
+
+    /// Low-level queueing for any event adhering to app-health/1 envelope.
+    void recordEvent(const TelemetryEvent& event);
+
+    /// App lifecycle events
+    void recordAppStart(int64_t coldStartMs, bool appletMode, bool docked, int wifiStrength = -1);
+    void recordAppExit(int64_t uptimeMs, bool docked);
+
+    /// Screen navigation & operational errors
+    void recordScreenView(const std::string& screenName);
+    void recordAppError(const std::string& component, const std::string& errorCode, const std::string& message = "");
+
+    /// Discrete playback sub-events (buffer stall, user seek)
+    void recordPlaybackBuffer(const std::string& sessionId, int64_t bufferMs, int64_t posMs,
+                              int64_t bufferIndex, const std::string& trigger, bool docked,
+                              const std::string& codec, const std::string& resolution,
+                              int64_t bitrateKbps, int64_t inputKbps);
+    void recordPlaybackSeek(const std::string& sessionId, int64_t seekMs, double fromPosSec,
+                            double toPosSec, int64_t seekIndex, bool docked,
+                            const std::string& codec, int64_t bitrateKbps);
+
     /// Queue a finished playback session. Never touches the network.
     void recordPlayback(const PlaybackEvent& event);
+
     /// Persist an in-progress session so a crash can still be reported at the next launch.
-    /// Local file write only; call it sparingly (start, pause, every ~30 s).
     void saveSnapshot(const PlaybackEvent& event);
+
     /// Leave-player trigger: submit the queue on a worker thread.
     void flushAsync();
-    /// App-exit trigger: synchronous, short deadline. Call before the thread pool stops.
+
+    /// App-exit trigger: synchronous, short deadline.
     void shutdown();
 
 private:
     TelemetryClient() = default;
 
-    nlohmann::json buildPayload(const PlaybackEvent& event) const;
+    TelemetryEvent toTelemetryEvent(const PlaybackEvent& event) const;
     void drain(long timeoutMs);
 
     HealthConfig config;

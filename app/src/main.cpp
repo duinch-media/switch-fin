@@ -1,5 +1,9 @@
 #include <borealis.hpp>
 
+#ifdef __SWITCH__
+#include <switch.h>
+#endif
+
 #include "utils/config.hpp"
 #include "utils/download.hpp"
 #include "utils/thread.hpp"
@@ -44,6 +48,7 @@
 using namespace brls::literals;  // for _i18n
 
 int main(int argc, char* argv[]) {
+    auto appStartAt = std::chrono::steady_clock::now();
     std::vector<std::string> items;
     for (int i = 1; i < argc; i++) {
         if (std::strcmp(argv[i], "-d") == 0) {
@@ -113,16 +118,37 @@ int main(int argc, char* argv[]) {
     brls::Application::registerXMLView("RequestTab", RequestTab::create);
     brls::Application::registerXMLView("ArrSetting", ArrSetting::create);
 
+    auto recordAppStartMetrics = [appStartAt]() {
+        int64_t coldStartMs = std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::steady_clock::now() - appStartAt).count();
+        bool appletMode = !brls::Application::getPlatform()->isApplicationMode();
+        bool docked = false;
+        int wifi = -1;
+#ifdef __SWITCH__
+        docked = (appletGetOperationMode() != AppletOperationMode_Handheld);
+        NifmInternetConnectionType type;
+        u32 strength = 0;
+        NifmInternetConnectionStatus status;
+        if (R_SUCCEEDED(nifmGetInternetConnectionStatus(&type, &strength, &status)) &&
+            type == NifmInternetConnectionType_WiFi && strength <= 3) {
+            wifi = static_cast<int>(strength);
+        }
+#endif
+        telemetry::TelemetryClient::instance().recordAppStart(coldStartMs, appletMode, docked, wifi);
+    };
+
     if (!brls::Application::getPlatform()->isApplicationMode()) {
         brls::Application::pushActivity(new HintActivity());
+        recordAppStartMetrics();
     } else if (items.size() > 0) {
         RemoteView::play(items.front());
+        recordAppStartMetrics();
     } else {
         brls::Application::pushActivity(new LoadingActivity(), brls::TransitionAnimation::NONE);
         brls::Application::blockInputs();
-        brls::async([]() {
+        brls::async([recordAppStartMetrics]() {
             const bool logged = AppConfig::instance().checkLogin();
-            brls::sync([logged]() {
+            brls::sync([logged, recordAppStartMetrics]() {
                 brls::Application::unblockInputs();
                 brls::Application::clear();
                 if (!logged) {
@@ -130,6 +156,7 @@ int main(int argc, char* argv[]) {
                 } else {
                     brls::Application::pushActivity(new MainActivity());
                 }
+                recordAppStartMetrics();
             });
         });
     }
@@ -140,6 +167,14 @@ int main(int argc, char* argv[]) {
 
     // Run the app
     while (brls::Application::mainLoop());
+
+    int64_t uptimeMs = std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::steady_clock::now() - appStartAt).count();
+    bool dockedAtExit = false;
+#ifdef __SWITCH__
+    dockedAtExit = (appletGetOperationMode() != AppletOperationMode_Handheld);
+#endif
+    telemetry::TelemetryClient::instance().recordAppExit(uptimeMs, dockedAtExit);
 
     // Submit queued telemetry before sockets and workers go away (short deadline, never blocks exit long).
     telemetry::TelemetryClient::instance().shutdown();

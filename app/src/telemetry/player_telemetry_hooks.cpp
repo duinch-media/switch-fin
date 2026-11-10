@@ -46,8 +46,13 @@ void onMpvEvent(PlaybackTracker& tracker, MpvEventEnum event) {
     switch (event) {
     case MpvEventEnum::START_FILE: tracker.onStartFile(); break;
     case MpvEventEnum::MPV_LOADED: tracker.onLoaded(); break;
+    case MpvEventEnum::LOADING_START: tracker.onLoadingStart(); break;
     case MpvEventEnum::LOADING_END:
-        if (tracker.awaitingFirstFrame()) tracker.onFirstFrame(mpv.getString("hwdec-current"));
+        if (tracker.awaitingFirstFrame()) {
+            tracker.onFirstFrame(mpv.getString("hwdec-current"));
+        } else {
+            tracker.onLoadingEnd();
+        }
         break;
     case MpvEventEnum::MPV_PAUSE: tracker.onPause(); break;
     case MpvEventEnum::MPV_RESUME: tracker.onResume(); break;
@@ -57,7 +62,10 @@ void onMpvEvent(PlaybackTracker& tracker, MpvEventEnum event) {
     case MpvEventEnum::MPV_BUFFERING_END: tracker.onStallEnd(); break;
     case MpvEventEnum::CACHE_SPEED_CHANGE: sample(tracker, mpv); break;
     case MpvEventEnum::MPV_STOP: tracker.finish("user_exit"); break;
-    case MpvEventEnum::MPV_FILE_ERROR: tracker.finish("error"); break;
+    case MpvEventEnum::MPV_FILE_ERROR:
+        tracker.finish("error");
+        TelemetryClient::instance().recordAppError("player", "mpv_file_error", "Playback terminated due to file error");
+        break;
     case MpvEventEnum::END_OF_FILE: tracker.finish("eof"); break;
     default:;
     }

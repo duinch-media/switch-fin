@@ -12,6 +12,7 @@
 #include "utils/keybind.hpp"
 #include "api/jellyfin.hpp"
 #include <fstream>
+#include "telemetry/telemetry_client.hpp"
 
 using namespace brls::literals;  // for _i18n
 
@@ -145,6 +146,7 @@ SearchTab::SearchTab() {
     // Inflate the tab from the XML file
     this->inflateFromXMLRes("xml/tabs/search_tv.xml");
     brls::Logger::debug("SearchTab: create");
+    telemetry::TelemetryClient::instance().recordScreenView("search");
 
     if (brls::Application::getThemeVariant() == brls::ThemeVariant::LIGHT) {
         this->searchSVG->setImageFromSVGRes("img/header-search-dark.svg");

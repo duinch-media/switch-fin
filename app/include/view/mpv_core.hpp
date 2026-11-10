@@ -109,6 +109,7 @@ public:
 
     /// Time spent in init() (mpv_create until the render context exists), for app-health.
     int64_t getInitMs() const { return this->init_ms; }
+    double getPlaybackTime() const { return this->playback_time; }
 
     MPVMap supportCodecs();
 

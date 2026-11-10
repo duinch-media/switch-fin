@@ -23,6 +23,8 @@ public:
     void onResume();
     void onStallStart();
     void onStallEnd();
+    void onLoadingStart();
+    void onLoadingEnd();
     void onSeekStart();
     void onSeekEnd();
     /// True at most once per second while playing: gate for the (costly) mpv property reads.
@@ -56,6 +58,10 @@ private:
     std::chrono::steady_clock::time_point lastSnapshotAt;
 
     int64_t totalPauseMs = 0;
+    int64_t stallPosMs = 0;
+    std::string stallTrigger = "underrun";
+    double seekFromPosSec = 0.0;
+
     std::vector<int64_t> speedSamplesKbps;
     std::vector<int64_t> seekDurations;
 

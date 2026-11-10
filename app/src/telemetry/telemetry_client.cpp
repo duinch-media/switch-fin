@@ -59,56 +59,165 @@ void TelemetryClient::init(const std::string& configDir) {
     if (this->config.enabled && this->queue->size() > 0) this->flushAsync();
 }
 
-nlohmann::json TelemetryClient::buildPayload(const PlaybackEvent& event) const {
-    nlohmann::json metrics = nlohmann::json::object();
+void TelemetryClient::recordEvent(const TelemetryEvent& event) {
+    if (!this->queue) return;
+    try {
+        TelemetryEvent ev = event;
+        if (ev.session_id.empty()) ev.session_id = misc::randHex(16);
+        nlohmann::json payload = buildHealthPayload(
+            ev, "switchfin", AppVersion::getVersion(), platformName(), this->config.env, this->deviceId);
+        this->queue->append(payload.dump());
+        brls::Logger::info("Telemetry: queued event '{}' ({})", ev.event, ev.session_id);
+    } catch (const std::exception& e) {
+        brls::Logger::warning("Telemetry: cannot queue event '{}': {}", event.event, e.what());
+    }
+}
+
+void TelemetryClient::recordAppStart(int64_t coldStartMs, bool appletMode, bool docked, int wifiStrength) {
+    TelemetryEvent ev;
+    ev.event = "app_start";
+    ev.session_id = misc::randHex(16);
+    std::string now = toIso8601();
+    ev.ts_start = now;
+    ev.ts_end = now;
+    if (coldStartMs > 0) ev.metrics["cold_start_ms"] = coldStartMs;
+    if (this->queue) {
+        ev.metrics["queue_flushed_count"] = this->queue->size();
+        ev.metrics["queue_dropped_count"] = this->queue->overflowDropped();
+    }
+    ev.context["applet_mode"] = appletMode;
+    ev.context["docked"] = docked;
+    if (wifiStrength >= 0) ev.context["wifi_strength"] = wifiStrength;
+    this->recordEvent(ev);
+    this->flushAsync();
+}
+
+void TelemetryClient::recordAppExit(int64_t uptimeMs, bool docked) {
+    TelemetryEvent ev;
+    ev.event = "app_exit";
+    ev.end_reason = "app_exit";
+    ev.session_id = misc::randHex(16);
+    std::string now = toIso8601();
+    ev.ts_start = now;
+    ev.ts_end = now;
+    if (uptimeMs > 0) ev.metrics["uptime_ms"] = uptimeMs;
+    ev.context["docked"] = docked;
+    ev.context["clean_exit"] = true;
+    this->recordEvent(ev);
+}
+
+void TelemetryClient::recordScreenView(const std::string& screenName) {
+    TelemetryEvent ev;
+    ev.event = "screen_view";
+    ev.session_id = misc::randHex(16);
+    std::string now = toIso8601();
+    ev.ts_start = now;
+    ev.ts_end = now;
+    ev.context["screen_name"] = screenName;
+    this->recordEvent(ev);
+}
+
+void TelemetryClient::recordAppError(const std::string& component, const std::string& errorCode, const std::string& message) {
+    TelemetryEvent ev;
+    ev.event = "app_error";
+    ev.session_id = misc::randHex(16);
+    std::string now = toIso8601();
+    ev.ts_start = now;
+    ev.ts_end = now;
+    ev.metrics["error_count"] = 1;
+    ev.context["component"] = component;
+    ev.context["error_code"] = errorCode;
+    if (!message.empty()) ev.context["message"] = message.substr(0, 256);
+    this->recordEvent(ev);
+}
+
+void TelemetryClient::recordPlaybackBuffer(const std::string& sessionId, int64_t bufferMs, int64_t posMs,
+                                          int64_t bufferIndex, const std::string& trigger, bool docked,
+                                          const std::string& codec, const std::string& resolution,
+                                          int64_t bitrateKbps, int64_t inputKbps) {
+    TelemetryEvent ev;
+    ev.event = "playback_buffer";
+    ev.session_id = sessionId.empty() ? misc::randHex(16) : (sessionId + "-b" + std::to_string(bufferIndex));
+    std::string now = toIso8601();
+    ev.ts_start = now;
+    ev.ts_end = now;
+    ev.metrics["buffer_ms"] = bufferMs;
+    if (posMs >= 0) ev.metrics["pos_ms"] = posMs;
+    ev.metrics["buffer_index"] = bufferIndex;
+    if (inputKbps > 0) ev.metrics["input_kbps"] = inputKbps;
+
+    ev.context["session_id"] = sessionId;
+    ev.context["trigger"] = trigger;
+    ev.context["docked"] = docked;
+    if (!codec.empty()) ev.context["video_codec"] = codec;
+    if (!resolution.empty()) ev.context["resolution"] = resolution;
+    if (bitrateKbps > 0) ev.context["bitrate_kbps"] = bitrateKbps;
+    this->recordEvent(ev);
+}
+
+void TelemetryClient::recordPlaybackSeek(const std::string& sessionId, int64_t seekMs, double fromPosSec,
+                                        double toPosSec, int64_t seekIndex, bool docked,
+                                        const std::string& codec, int64_t bitrateKbps) {
+    TelemetryEvent ev;
+    ev.event = "playback_seek";
+    ev.session_id = sessionId.empty() ? misc::randHex(16) : (sessionId + "-s" + std::to_string(seekIndex));
+    std::string now = toIso8601();
+    ev.ts_start = now;
+    ev.ts_end = now;
+    ev.metrics["seek_ms"] = seekMs;
+    if (fromPosSec >= 0) ev.metrics["from_pos_sec"] = fromPosSec;
+    if (toPosSec >= 0) ev.metrics["to_pos_sec"] = toPosSec;
+    ev.metrics["seek_index"] = seekIndex;
+
+    ev.context["session_id"] = sessionId;
+    ev.context["docked"] = docked;
+    if (!codec.empty()) ev.context["video_codec"] = codec;
+    if (bitrateKbps > 0) ev.context["bitrate_kbps"] = bitrateKbps;
+    this->recordEvent(ev);
+}
+
+TelemetryEvent TelemetryClient::toTelemetryEvent(const PlaybackEvent& event) const {
+    TelemetryEvent ev;
+    ev.event = "playback_session";
+    ev.session_id = event.session_id;
+    ev.ts_start = event.ts_start;
+    ev.ts_end = event.ts_end;
+    ev.end_reason = event.end_reason;
+
     const auto& m = event.metrics;
-    // Omit what was not measured: a missing key means "unknown", 0 means "really zero".
-    if (m.init_ms > 0) metrics["init_ms"] = m.init_ms;
-    if (m.api_ms > 0) metrics["api_ms"] = m.api_ms;
-    if (m.open_ms > 0) metrics["open_ms"] = m.open_ms;
-    if (m.ttff_ms > 0) metrics["ttff_ms"] = m.ttff_ms;
-    metrics["play_ms"] = m.play_ms;
-    metrics["stall_count"] = m.stall_count;
-    metrics["stall_ms"] = m.stall_ms;
-    metrics["rebuffer_ratio"] = m.rebuffer_ratio;
-    metrics["seek_count"] = m.seek_count;
-    if (m.seek_count > 0 && m.seek_p50_ms > 0) metrics["seek_p50_ms"] = m.seek_p50_ms;
-    if (m.input_kbps_avg > 0) metrics["input_kbps_avg"] = m.input_kbps_avg;
-    if (m.input_kbps_p10 > 0) metrics["input_kbps_p10"] = m.input_kbps_p10;
-    metrics["dropped_frames"] = m.dropped_frames;
+    if (m.init_ms > 0) ev.metrics["init_ms"] = m.init_ms;
+    if (m.api_ms > 0) ev.metrics["api_ms"] = m.api_ms;
+    if (m.open_ms > 0) ev.metrics["open_ms"] = m.open_ms;
+    if (m.ttff_ms > 0) ev.metrics["ttff_ms"] = m.ttff_ms;
+    ev.metrics["play_ms"] = m.play_ms;
+    ev.metrics["stall_count"] = m.stall_count;
+    ev.metrics["stall_ms"] = m.stall_ms;
+    ev.metrics["rebuffer_ratio"] = m.rebuffer_ratio;
+    ev.metrics["seek_count"] = m.seek_count;
+    if (m.seek_count > 0 && m.seek_p50_ms > 0) ev.metrics["seek_p50_ms"] = m.seek_p50_ms;
+    if (m.input_kbps_avg > 0) ev.metrics["input_kbps_avg"] = m.input_kbps_avg;
+    if (m.input_kbps_p10 > 0) ev.metrics["input_kbps_p10"] = m.input_kbps_p10;
+    ev.metrics["dropped_frames"] = m.dropped_frames;
 
-    nlohmann::json context = nlohmann::json::object();
     const auto& c = event.context;
-    if (!c.play_method.empty()) context["play_method"] = c.play_method;
-    if (!c.video_codec.empty()) context["video_codec"] = c.video_codec;
-    if (!c.hwdec.empty()) context["hwdec"] = c.hwdec;
-    if (!c.resolution.empty()) context["resolution"] = c.resolution;
-    if (c.bitrate_kbps > 0) context["bitrate_kbps"] = c.bitrate_kbps;
-    if (c.wifi_strength >= 0) context["wifi_strength"] = c.wifi_strength;
-    context["docked"] = c.docked;
-
-    return {
-        {"schema", "app-health/1"},
-        {"event", "playback_session"},
-        {"app", "switchfin"},
-        {"app_version", AppVersion::getVersion()},
-        {"platform", platformName()},
-        {"env", this->config.env},
-        {"device_id", this->deviceId},
-        {"session_id", event.session_id.empty() ? misc::randHex(16) : event.session_id},
-        {"ts_start", event.ts_start},
-        {"ts_end", event.ts_end},
-        {"end_reason", event.end_reason},
-        {"metrics", metrics},
-        {"context", context},
-    };
+    if (!c.play_method.empty()) ev.context["play_method"] = c.play_method;
+    if (!c.video_codec.empty()) ev.context["video_codec"] = c.video_codec;
+    if (!c.hwdec.empty()) ev.context["hwdec"] = c.hwdec;
+    if (!c.resolution.empty()) ev.context["resolution"] = c.resolution;
+    if (c.bitrate_kbps > 0) ev.context["bitrate_kbps"] = c.bitrate_kbps;
+    if (c.wifi_strength >= 0) ev.context["wifi_strength"] = c.wifi_strength;
+    ev.context["docked"] = c.docked;
+    return ev;
 }
 
 void TelemetryClient::recordPlayback(const PlaybackEvent& event) {
-    if (!this->queue) return;  // init() not called (e.g. very early exit): drop silently
+    if (!this->queue) return;
     try {
-        this->queue->append(this->buildPayload(event).dump());
-        clearSnapshot(this->snapshotPath);  // after the append: a crash in between duplicates, never loses
+        TelemetryEvent ev = this->toTelemetryEvent(event);
+        nlohmann::json payload = buildHealthPayload(
+            ev, "switchfin", AppVersion::getVersion(), platformName(), this->config.env, this->deviceId);
+        this->queue->append(payload.dump());
+        clearSnapshot(this->snapshotPath);
         brls::Logger::info("Telemetry: queued playback session {}", event.session_id);
     } catch (const std::exception& e) {
         brls::Logger::warning("Telemetry: cannot queue event: {}", e.what());
@@ -118,7 +227,10 @@ void TelemetryClient::recordPlayback(const PlaybackEvent& event) {
 void TelemetryClient::saveSnapshot(const PlaybackEvent& event) {
     if (!this->queue) return;
     try {
-        writeSnapshot(this->snapshotPath, this->buildPayload(event).dump());
+        TelemetryEvent ev = this->toTelemetryEvent(event);
+        nlohmann::json payload = buildHealthPayload(
+            ev, "switchfin", AppVersion::getVersion(), platformName(), this->config.env, this->deviceId);
+        writeSnapshot(this->snapshotPath, payload.dump());
     } catch (const std::exception& e) {
         brls::Logger::warning("Telemetry: cannot save snapshot: {}", e.what());
     }
@@ -135,11 +247,11 @@ void TelemetryClient::shutdown() {
 }
 
 void TelemetryClient::drain(long timeoutMs) {
-    if (this->busy.exchange(true)) return;  // another drain is already running
+    if (this->busy.exchange(true)) return;
     const std::string url = this->config.endpoint;
     HTTP::Header headers = {
         "Content-Type: application/x-ndjson",
-        "Authorization: Bearer " + this->config.apiKey,  // never logged
+        "Authorization: Bearer " + this->config.apiKey,
     };
     auto transport = [&](const std::string& body) -> int {
         try {

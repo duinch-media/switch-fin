@@ -14,6 +14,7 @@
 #include "telemetry/health_queue.hpp"
 #include "telemetry/health_snapshot.hpp"
 #include "telemetry/health_uploader.hpp"
+#include "telemetry/telemetry_event.hpp"
 
 using namespace telemetry;
 
@@ -210,6 +211,81 @@ static void crashRecovery() {
     CHECK(!writeSnapshot("/nonexistent_dir/x", payload));
 }
 
+static void eventsPayloads() {
+    const std::string devId = "12345678-1234-1234-1234-123456789abc";
+
+    // 1. app_start
+    TelemetryEvent evStart;
+    evStart.event = "app_start";
+    evStart.session_id = "start12345678";
+    evStart.metrics["cold_start_ms"] = 1250;
+    evStart.context["applet_mode"] = false;
+    evStart.context["docked"] = true;
+    auto jStart = buildHealthPayload(evStart, "switchfin", "1.0.0", "switch", "dev", devId);
+    CHECK(jStart["schema"] == "app-health/1");
+    CHECK(jStart["event"] == "app_start");
+    CHECK(jStart["app"] == "switchfin");
+    CHECK(jStart["metrics"]["cold_start_ms"] == 1250);
+    CHECK(jStart["context"]["docked"] == true);
+
+    // 2. playback_buffer
+    TelemetryEvent evBuf;
+    evBuf.event = "playback_buffer";
+    evBuf.session_id = "sess1234-b1";
+    evBuf.metrics["buffer_ms"] = 850;
+    evBuf.metrics["pos_ms"] = 45000;
+    evBuf.metrics["buffer_index"] = 1;
+    evBuf.context["trigger"] = "underrun";
+    auto jBuf = buildHealthPayload(evBuf, "switchfin", "1.0.0", "switch", "dev", devId);
+    CHECK(jBuf["event"] == "playback_buffer");
+    CHECK(jBuf["metrics"]["buffer_ms"] == 850);
+    CHECK(jBuf["context"]["trigger"] == "underrun");
+
+    // 3. playback_seek
+    TelemetryEvent evSeek;
+    evSeek.event = "playback_seek";
+    evSeek.session_id = "sess1234-s1";
+    evSeek.metrics["seek_ms"] = 420;
+    evSeek.metrics["from_pos_sec"] = 120.5;
+    evSeek.metrics["to_pos_sec"] = 300.0;
+    evSeek.context["docked"] = false;
+    auto jSeek = buildHealthPayload(evSeek, "switchfin", "1.0.0", "switch", "dev", devId);
+    CHECK(jSeek["event"] == "playback_seek");
+    CHECK(jSeek["metrics"]["seek_ms"] == 420);
+    CHECK(jSeek["metrics"]["to_pos_sec"] == 300.0);
+
+    // 4. app_exit
+    TelemetryEvent evExit;
+    evExit.event = "app_exit";
+    evExit.end_reason = "app_exit";
+    evExit.session_id = "exit12345678";
+    evExit.metrics["uptime_ms"] = 120000;
+    auto jExit = buildHealthPayload(evExit, "switchfin", "1.0.0", "switch", "dev", devId);
+    CHECK(jExit["event"] == "app_exit");
+    CHECK(jExit["end_reason"] == "app_exit");
+    CHECK(jExit["metrics"]["uptime_ms"] == 120000);
+
+    // 5. screen_view & app_error
+    TelemetryEvent evScreen;
+    evScreen.event = "screen_view";
+    evScreen.session_id = "screen1234";
+    evScreen.context["screen_name"] = "home";
+    auto jScreen = buildHealthPayload(evScreen, "switchfin", "1.0.0", "switch", "dev", devId);
+    CHECK(jScreen["event"] == "screen_view");
+    CHECK(jScreen["context"]["screen_name"] == "home");
+
+    TelemetryEvent evErr;
+    evErr.event = "app_error";
+    evErr.session_id = "err12345678";
+    evErr.metrics["error_count"] = 1;
+    evErr.context["component"] = "jellyfin_api";
+    evErr.context["error_code"] = "http_404";
+    auto jErr = buildHealthPayload(evErr, "switchfin", "1.0.0", "switch", "dev", devId);
+    CHECK(jErr["event"] == "app_error");
+    CHECK(jErr["metrics"]["error_count"] == 1);
+    CHECK(jErr["context"]["error_code"] == "http_404");
+}
+
 int main() {
     queueBasics();
     queueCaps();
@@ -217,6 +293,7 @@ int main() {
     configLoading();
     deviceId();
     crashRecovery();
+    eventsPayloads();
     if (failures) {
         std::cerr << failures << " check(s) failed\n";
         return 1;

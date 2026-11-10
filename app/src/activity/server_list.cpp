@@ -12,6 +12,7 @@
 #include "utils/image.hpp"
 #include "utils/dialog.hpp"
 #include "api/jellyfin.hpp"
+#include "telemetry/telemetry_client.hpp"
 
 using namespace brls::literals;  // for _i18n
 
@@ -115,6 +116,7 @@ public:
                 });
             } catch (const std::exception& ex) {
                 std::string msg = ex.what();
+                telemetry::TelemetryClient::instance().recordAppError("auth", "login_failed", msg);
                 brls::sync([msg]() {
                     brls::Application::unblockInputs();
                     Dialog::show(msg);
@@ -130,7 +132,10 @@ private:
     ServerList* parent;
 };
 
-ServerList::ServerList() { brls::Logger::debug("ServerList: create"); }
+ServerList::ServerList() {
+    brls::Logger::debug("ServerList: create");
+    telemetry::TelemetryClient::instance().recordScreenView("server_list");
+}
 
 ServerList::~ServerList() { brls::Logger::debug("ServerList Activity: delete"); }
 

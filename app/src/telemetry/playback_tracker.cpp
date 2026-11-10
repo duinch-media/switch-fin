@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <numeric>
 #include <borealis/core/logger.hpp>
+#include "view/mpv_core.hpp"
 
 #ifdef __SWITCH__
 #include <switch.h>
@@ -62,6 +63,9 @@ void PlaybackTracker::start(const std::string& sessionId, const std::string& pla
     this->inPause = false;
     this->inSeek = false;
     this->totalPauseMs = 0;
+    this->stallPosMs = 0;
+    this->stallTrigger = "underrun";
+    this->seekFromPosSec = 0.0;
     this->speedSamplesKbps.clear();
     this->seekDurations.clear();
     this->lastSampleAt = {};
@@ -138,7 +142,20 @@ void PlaybackTracker::onStallStart() {
         this->inStall = true;
         this->event.metrics.stall_count++;
         this->stallStart = std::chrono::steady_clock::now();
+        this->stallPosMs = static_cast<int64_t>(MPVCore::instance().getPlaybackTime() * 1000);
+        this->stallTrigger = "underrun";
         brls::Logger::info("Telemetry: Stall #{} started", this->event.metrics.stall_count);
+    }
+}
+
+void PlaybackTracker::onLoadingStart() {
+    if (this->active && this->hasFirstFrame && !this->inPause && !this->inSeek && !this->inStall) {
+        this->inStall = true;
+        this->event.metrics.stall_count++;
+        this->stallStart = std::chrono::steady_clock::now();
+        this->stallPosMs = static_cast<int64_t>(MPVCore::instance().getPlaybackTime() * 1000);
+        this->stallTrigger = "loading";
+        brls::Logger::info("Telemetry: Loading buffer stall #{} started", this->event.metrics.stall_count);
     }
 }
 
@@ -151,7 +168,17 @@ void PlaybackTracker::onStallEnd() {
         this->event.metrics.stall_ms += duration;
         brls::Logger::info("Telemetry: Stall ended (duration: {} ms, total: {} ms)",
                            duration, this->event.metrics.stall_ms);
+
+        int64_t curSpeed = this->speedSamplesKbps.empty() ? 0 : this->speedSamplesKbps.back();
+        TelemetryClient::instance().recordPlaybackBuffer(
+            this->event.session_id, duration, this->stallPosMs, this->event.metrics.stall_count,
+            this->stallTrigger, this->event.context.docked, this->event.context.video_codec,
+            this->event.context.resolution, this->event.context.bitrate_kbps, curSpeed);
     }
+}
+
+void PlaybackTracker::onLoadingEnd() {
+    this->onStallEnd();
 }
 
 void PlaybackTracker::onSeekStart() {
@@ -161,6 +188,7 @@ void PlaybackTracker::onSeekStart() {
         this->inSeek = true;
         this->event.metrics.seek_count++;
         this->seekStart = std::chrono::steady_clock::now();
+        this->seekFromPosSec = MPVCore::instance().getPlaybackTime();
     }
 }
 
@@ -170,7 +198,13 @@ void PlaybackTracker::onSeekEnd() {
         auto now = std::chrono::steady_clock::now();
         int64_t dur =
             std::chrono::duration_cast<std::chrono::milliseconds>(now - this->seekStart).count();
+        double toPosSec = MPVCore::instance().getPlaybackTime();
         this->seekDurations.push_back(dur);
+
+        TelemetryClient::instance().recordPlaybackSeek(
+            this->event.session_id, dur, this->seekFromPosSec, toPosSec,
+            this->event.metrics.seek_count, this->event.context.docked,
+            this->event.context.video_codec, this->event.context.bitrate_kbps);
     }
 }
 

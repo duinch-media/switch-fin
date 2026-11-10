@@ -11,12 +11,14 @@
 #include "utils/misc.hpp"
 #include "utils/dialog.hpp"
 #include "utils/arr_actions.hpp"
+#include "telemetry/telemetry_client.hpp"
 #include <fmt/ranges.h>
 
 using namespace brls::literals;  // for _i18n
 
 MediaMovie::MediaMovie(const jellyfin::Item& item) : itemId(item.Id) {
     brls::Logger::debug("Tab MediaMovie: create");
+    telemetry::TelemetryClient::instance().recordScreenView("movie_detail");
     // Inflate the tab from the XML file
     this->inflateFromXMLRes("xml/tabs/movie.xml");
 
