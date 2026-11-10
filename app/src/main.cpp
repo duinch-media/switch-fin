@@ -35,6 +35,7 @@
 #include "tab/setting_tab.hpp"
 #include "tab/request_tab.hpp"
 #include "tab/arr_setting.hpp"
+#include "telemetry/telemetry_client.hpp"
 
 #if defined(__SDL2__)
 #include <SDL2/SDL_main.h>
@@ -77,6 +78,7 @@ int main(int argc, char* argv[]) {
 
     conf.initThemes();
     DownloadManager::instance().init();
+    telemetry::TelemetryClient::instance().init(conf.configDir());
 
     // Return directly to the desktop when closing the application (only for NX)
     brls::Application::getPlatform()->exitToHomeMode(true);
@@ -139,6 +141,8 @@ int main(int argc, char* argv[]) {
     // Run the app
     while (brls::Application::mainLoop());
 
+    // Submit queued telemetry before sockets and workers go away (short deadline, never blocks exit long).
+    telemetry::TelemetryClient::instance().shutdown();
     ThreadPool::instance().stop();
 
     conf.checkRestart(argv);

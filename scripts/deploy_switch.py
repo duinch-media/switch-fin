@@ -63,6 +63,15 @@ try:
             ftp.storbinary('STOR /switch/Switchfin/arr_config.json', io.BytesIO(cfg_bytes))
             print("✓ Created default /switch/Switchfin/arr_config.json")
 
+    # Upload local health.json (app-health endpoint + key; git-ignored, never committed)
+    local_health = os.path.join(repo_root, 'health.json')
+    if os.path.exists(local_health):
+        with open(local_health, 'rb') as f:
+            ftp.storbinary('STOR /switch/Switchfin/health.json', f)
+        print("✓ Uploaded /switch/Switchfin/health.json from local file")
+    else:
+        print("ℹ No local health.json: telemetry will only be queued on the Switch (see resources/health.example.json)")
+
     ftp.quit()
     print("\n🎉 Deployment completed successfully!")
 except Exception as e:

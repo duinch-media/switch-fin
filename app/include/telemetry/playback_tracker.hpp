@@ -3,6 +3,7 @@
 #include "telemetry/telemetry_client.hpp"
 #include "api/jellyfin.hpp"
 #include <chrono>
+#include <vector>
 
 namespace telemetry {
 
@@ -43,8 +44,7 @@ private:
     std::chrono::steady_clock::time_point seekStart;
 
     int64_t totalPauseMs = 0;
-    int64_t speedSamplesCount = 0;
-    int64_t speedSumKbps = 0;
+    std::vector<int64_t> speedSamplesKbps;
     std::vector<int64_t> seekDurations;
 
     PlaybackEvent event;

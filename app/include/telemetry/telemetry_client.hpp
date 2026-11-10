@@ -1,13 +1,13 @@
 #pragma once
 
+#include <atomic>
+#include <cstdint>
+#include <memory>
 #include <string>
-#include <vector>
-#include <deque>
-#include <mutex>
-#include <chrono>
 #include <nlohmann/json.hpp>
-#include <borealis/core/timer.hpp>
-#include "utils/thread.hpp"
+
+#include "telemetry/health_config.hpp"
+#include "telemetry/health_queue.hpp"
 
 namespace telemetry {
 
@@ -23,6 +23,7 @@ struct PlaybackMetrics {
     int64_t seek_count = 0;
     int64_t seek_p50_ms = 0;
     int64_t input_kbps_avg = 0;
+    int64_t input_kbps_p10 = 0;
     int64_t dropped_frames = 0;
 };
 
@@ -45,29 +46,34 @@ struct PlaybackEvent {
     PlaybackContext context;
 };
 
+/// Client side of the app-health contract (see the app-health repo, docs/schema.md):
+/// events are queued on disk and submitted in batches only when the player is left,
+/// when the app exits, and (for leftovers) at the next launch. Nothing here is called
+/// per frame and nothing blocks playback.
 class TelemetryClient {
 public:
     static TelemetryClient& instance();
 
+    /// Load health.json and the install id, open the queue, then retry leftovers
+    /// from earlier runs in the background. Safe to call once at startup.
+    void init(const std::string& configDir);
+    /// Queue a finished playback session. Never touches the network.
     void recordPlayback(const PlaybackEvent& event);
-    void flush();
-    void setGatewayUrl(const std::string& url);
-    void setApiKey(const std::string& key);
+    /// Leave-player trigger: submit the queue on a worker thread.
+    void flushAsync();
+    /// App-exit trigger: synchronous, short deadline. Call before the thread pool stops.
+    void shutdown();
 
 private:
-    TelemetryClient();
-    ~TelemetryClient();
+    TelemetryClient() = default;
 
-    std::string getFormattedDeviceId();
-    std::string resolveGatewayUrl() const;
-    nlohmann::json buildPayload(const PlaybackEvent& event);
-    void sendBatch();
+    nlohmann::json buildPayload(const PlaybackEvent& event) const;
+    void drain(long timeoutMs);
 
-    std::string gatewayUrl;
-    std::string apiKey;
-    std::mutex queueMutex;
-    std::deque<PlaybackEvent> queue;
-    brls::RepeatingTimer ticker;
+    HealthConfig config;
+    std::string deviceId;
+    std::unique_ptr<HealthQueue> queue;
+    std::atomic<bool> busy{false};
 };
 
 }  // namespace telemetry

@@ -38,8 +38,7 @@ void PlaybackTracker::start(const std::string& sessionId, const std::string& pla
     this->inPause = false;
     this->inSeek = false;
     this->totalPauseMs = 0;
-    this->speedSamplesCount = 0;
-    this->speedSumKbps = 0;
+    this->speedSamplesKbps.clear();
     this->seekDurations.clear();
 
     this->wallStart = std::chrono::system_clock::now();
@@ -139,9 +138,7 @@ void PlaybackTracker::onSeekEnd() {
 
 void PlaybackTracker::sampleSpeed(int64_t bytesPerSec) {
     if (this->active && bytesPerSec > 0) {
-        int64_t kbps = (bytesPerSec * 8) / 1000;
-        this->speedSumKbps += kbps;
-        this->speedSamplesCount++;
+        this->speedSamplesKbps.push_back((bytesPerSec * 8) / 1000);
     }
 }
 
@@ -177,8 +174,11 @@ void PlaybackTracker::finish(const std::string& reason) {
         this->event.metrics.rebuffer_ratio = (double)this->event.metrics.stall_ms / (double)denom;
     }
 
-    if (this->speedSamplesCount > 0) {
-        this->event.metrics.input_kbps_avg = this->speedSumKbps / this->speedSamplesCount;
+    if (!this->speedSamplesKbps.empty()) {
+        auto& v = this->speedSamplesKbps;
+        std::sort(v.begin(), v.end());
+        this->event.metrics.input_kbps_avg = std::accumulate(v.begin(), v.end(), int64_t{0}) / (int64_t)v.size();
+        this->event.metrics.input_kbps_p10 = v[(v.size() - 1) / 10];  // slow tail
     }
 
     if (!this->seekDurations.empty()) {
@@ -191,7 +191,7 @@ void PlaybackTracker::finish(const std::string& reason) {
                        this->event.metrics.stall_count, this->event.metrics.stall_ms, reason);
 
     TelemetryClient::instance().recordPlayback(this->event);
-    TelemetryClient::instance().flush();
+    TelemetryClient::instance().flushAsync();
 }
 
 }  // namespace telemetry

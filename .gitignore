@@ -35,3 +35,4 @@ arr_config.json
 *.jks
 *.keystore
 service-account*.json
+health.json
