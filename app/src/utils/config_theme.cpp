@@ -59,6 +59,8 @@ void AppConfig::initThemes() {
         brls::getStyle().addMetric("app/grid/4", 3);
         brls::getStyle().addMetric("app/grid/3", 2);
         brls::getStyle().addMetric("app/grid/2", 1);
+        brls::getStyle().addMetric("brls/sidebar/item_height", 46);
+        brls::getStyle().addMetric("brls/sidebar/item_font_size", 15);
         brls::getStyle().addMetric("brls/tab_frame/content_padding_sides", 30);
         brls::getStyle().addMetric("main/content_padding_sides", 15);
         brls::getStyle().addMetric("main/content_padding_top_bottom", 20);
@@ -77,6 +79,8 @@ void AppConfig::initThemes() {
             brls::getStyle().addMetric("app/grid/4", 6);
             brls::getStyle().addMetric("app/grid/3", 5);
             brls::getStyle().addMetric("app/grid/2", 4);
+            brls::getStyle().addMetric("brls/sidebar/item_height", 64);
+            brls::getStyle().addMetric("brls/sidebar/item_font_size", 20);
             break;
         case 900:
             brls::getStyle().addMetric("app/album/height", 240);
@@ -91,6 +95,8 @@ void AppConfig::initThemes() {
             brls::getStyle().addMetric("app/grid/4", 5);
             brls::getStyle().addMetric("app/grid/3", 4);
             brls::getStyle().addMetric("app/grid/2", 3);
+            brls::getStyle().addMetric("brls/sidebar/item_height", 58);
+            brls::getStyle().addMetric("brls/sidebar/item_font_size", 18);
             break;
         default:
             brls::getStyle().addMetric("app/album/height", 225);
@@ -105,6 +111,8 @@ void AppConfig::initThemes() {
             brls::getStyle().addMetric("app/grid/4", 4);
             brls::getStyle().addMetric("app/grid/3", 3);
             brls::getStyle().addMetric("app/grid/2", 2);
+            brls::getStyle().addMetric("brls/sidebar/item_height", 54);
+            brls::getStyle().addMetric("brls/sidebar/item_font_size", 17);
         }
         brls::getStyle().addMetric("main/content_padding_sides", 25);
         brls::getStyle().addMetric("main/content_padding_top_bottom", 30);
