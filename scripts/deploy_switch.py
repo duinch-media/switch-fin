@@ -8,7 +8,10 @@ import io
 FTP_HOST = os.environ.get('SWITCH_IP', '.'.join(['192', '168', '1', '17']))
 FTP_PORT = int(os.environ.get('SWITCH_PORT', '5000'))
 ARR_HOST = os.environ.get('ARR_HOST', 'http://' + '.'.join(['192', '168', '1', '37']))
-NRO_PATH = os.environ.get('NRO_PATH', '/tmp/switchfin_artifact/Switchfin-Switch-13/Switchfin.nro')
+default_nro = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'Switchfin.nro')
+if not os.path.exists(default_nro):
+    default_nro = '/tmp/switchfin_artifact/Switchfin-Switch-13/Switchfin.nro'
+NRO_PATH = os.environ.get('NRO_PATH', default_nro)
 
 config_only = '--config-only' in sys.argv
 

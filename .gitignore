@@ -7,6 +7,11 @@ build*/
 .gdbinit
 *.exe
 *.dmp
+*.nro
+*.elf
+*.nacp
+*.nsp
+*.vpk
 /resources/forwarder.nsp
 /resources/shaders/*.dksh
 /scripts/*/*/*.tar.*
