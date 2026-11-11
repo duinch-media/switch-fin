@@ -73,6 +73,7 @@ public:
     void stop();
 
     void seek(double value, const std::string &flags = "absolute");
+    void seekToProgress(double progress);
 
     void setSpeed(double value);
 

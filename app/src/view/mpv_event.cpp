@@ -198,6 +198,15 @@ void MPVCore::seek(double value, const std::string &flags) {
     this->command("seek", pos.c_str(), flags.c_str());
 }
 
+void MPVCore::seekToProgress(double progress) {
+    // Absolute seconds avoid mpv's percent estimate on network streams that are not buffered yet.
+    if (this->duration > 0) {
+        this->seek(progress * (double)this->duration, "absolute");
+        return;
+    }
+    this->seek(progress * 100, "absolute-percent");
+}
+
 bool MPVCore::isStopped() const { return video_stopped; }
 
 bool MPVCore::isPaused() { return video_paused; }

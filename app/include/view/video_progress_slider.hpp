@@ -57,6 +57,10 @@ private:
     // while pointer is selected, the last progress value set by setProgress()
     // is stored here to be restored when canceling the selection
     float lastProgress = 1;
+    bool dragging = false;
 
     void updateUI();
+    void applyProgress(float value);
+    // Map an absolute screen X coordinate to a progress value (unclamped).
+    float progressAt(float absoluteX);
 };

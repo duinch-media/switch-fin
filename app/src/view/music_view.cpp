@@ -46,7 +46,7 @@ MusicView::MusicView() {
 
     osdSlider->getProgressSetEvent().subscribe([](float progress) {
         brls::Logger::verbose("Set progress: {}", progress);
-        MPVCore::instance().seek(progress * 100, "absolute-percent");
+        MPVCore::instance().seekToProgress(progress);
     });
 }
 

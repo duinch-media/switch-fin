@@ -5,6 +5,8 @@
 #include "view/video_progress_slider.hpp"
 #include "view/svg_image.hpp"
 
+#include <cmath>
+
 VideoProgressSlider::VideoProgressSlider() {
     input = brls::Application::getPlatform()->getInputManager();
 
@@ -48,31 +50,30 @@ VideoProgressSlider::VideoProgressSlider() {
     line->setColor(theme["brls/slider/line_filled"]);
     lineEmpty->setColor(theme["brls/slider/line_empty"]);
 
-    pointer->addGestureRecognizer(new brls::PanGestureRecognizer(
+    // Pan anywhere on the bar: the pointer follows the finger at its absolute position.
+    this->addGestureRecognizer(new brls::PanGestureRecognizer(
         [this](brls::PanGestureStatus status, brls::Sound* soundToPlay) {
-            brls::Application::giveFocus(pointer);
-
             if (status.state == brls::GestureState::UNSURE) {
                 *soundToPlay = brls::SOUND_FOCUS_CHANGE;
                 return;
             }
-
-            else if (status.state == brls::GestureState::INTERRUPTED || status.state == brls::GestureState::FAILED) {
+            if (status.state == brls::GestureState::INTERRUPTED || status.state == brls::GestureState::FAILED) {
+                dragging = false;
+                applyProgress(lastProgress);
                 *soundToPlay = brls::SOUND_TOUCH_UNFOCUS;
                 return;
             }
-
-            else if (status.state == brls::GestureState::START) {
+            if (status.state == brls::GestureState::START) {
+                dragging = true;
                 lastProgress = progress;
+                brls::Application::giveFocus(pointer);
             }
 
-            float paddingWidth = getWidth() - pointer->getWidth();
-            float delta = status.position.x - status.startPosition.x;
-
-            setProgress(lastProgress + delta / paddingWidth);
+            applyProgress(progressAt(status.position.x));
             progressEvent.fire(this->progress);
 
             if (status.state == brls::GestureState::END) {
+                dragging = false;
                 brls::Application::getPlatform()->getAudioPlayer()->play(brls::SOUND_SLIDER_RELEASE);
                 progressSetEvent.fire(this->progress);
                 brls::Application::giveFocus(this->getParentActivity()->getContentView());
@@ -83,9 +84,7 @@ VideoProgressSlider::VideoProgressSlider() {
     this->addGestureRecognizer(
         new brls::TapGestureRecognizer([this](brls::TapGestureStatus status, brls::Sound* soundToPlay) {
             if (status.state != brls::GestureState::END) return;
-            float paddingWidth = getWidth() - pointer->getWidth();
-            float delta = status.position.x - pointer->getWidth() / 2.0f - pointer->getX();
-            setProgress(progress + delta / paddingWidth);
+            applyProgress(progressAt(status.position.x));
             progressSetEvent.fire(this->progress);
             brls::Application::giveFocus(this->getParentActivity()->getContentView());
         }));
@@ -104,12 +103,22 @@ void VideoProgressSlider::onLayout() {
 brls::View* VideoProgressSlider::getDefaultFocus() { return pointer; }
 
 void VideoProgressSlider::setProgress(float progress) {
-    this->lastProgress = progress;
+    // Playback updates must not fight the finger while the user is dragging.
+    if (dragging) return;
+    applyProgress(progress);
+}
 
-    this->progress = progress;
-    if (this->progress < 0) this->progress = 0;
-    if (this->progress > 1) this->progress = 1;
+void VideoProgressSlider::applyProgress(float value) {
+    if (std::isnan(value) || value < 0) value = 0;
+    if (value > 1) value = 1;
+    this->progress = value;
     updateUI();
+}
+
+float VideoProgressSlider::progressAt(float absoluteX) {
+    float paddingWidth = getWidth() - pointer->getWidth();
+    if (paddingWidth <= 0) return progress;
+    return (absoluteX - getX() - pointer->getWidth() / 2.0f) / paddingWidth;
 }
 
 void VideoProgressSlider::updateUI() {
