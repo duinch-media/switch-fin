@@ -12,14 +12,21 @@
 // touch will be recognized as pan movement
 #define MAX_DELTA_MOVEMENT 24
 
+// Max distance between consecutive taps to recognize as double tap
+#define MAX_DOUBLE_TAP_DISTANCE 180
+
 // Time in ms to recognize long press
 #define LONG_TIME_MS 200  // 200ms
 #define LONG_TIME_US (LONG_TIME_MS * 1000)
 
+// Time in ms to recognize double tap
+#define DOUBLE_TAP_TIME_MS 280  // 280ms
+#define DOUBLE_TAP_TIME_US (DOUBLE_TAP_TIME_MS * 1000)
+
 OsdGestureRecognizer::OsdGestureRecognizer(const OsdGestureEvent::Callback& respond) {
     tapEvent.subscribe(respond);
     this->startTime = 0;
-    this->endTime = -1 - LONG_TIME_US;
+    this->endTime = -1 - DOUBLE_TAP_TIME_US;
 }
 
 /// 触摸被打断时保证触发对应的完结事件
@@ -70,7 +77,9 @@ brls::GestureState OsdGestureRecognizer::recognitionLoop(
     case brls::TouchPhase::START:
         brls::Application::giveFocus(view);
         this->startTime = brls::getCPUTimeUsec();
-        if (this->startTime - this->endTime < LONG_TIME_US) {
+        if (this->startTime - this->endTime < DOUBLE_TAP_TIME_US &&
+            fabs(position.x - this->position.x) < MAX_DOUBLE_TAP_DISTANCE &&
+            fabs(position.y - this->position.y) < MAX_DOUBLE_TAP_DISTANCE) {
             brls::cancelDelay(iter);
             this->osdGestureType = OsdGestureType::DOUBLE_TAP_START;
         } else {
@@ -169,7 +178,7 @@ brls::GestureState OsdGestureRecognizer::recognitionLoop(
         default:
             this->osdGestureType = OsdGestureType::TAP;
             brls::cancelDelay(iter);
-            iter = brls::delay(LONG_TIME_MS, [this]() {
+            iter = brls::delay(DOUBLE_TAP_TIME_MS, [this]() {
                 // 延时触发点击事件
                 this->tapEvent.fire(getCurrentStatus());
             });

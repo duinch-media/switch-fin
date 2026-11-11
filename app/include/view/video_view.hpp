@@ -121,6 +121,7 @@ private:
 
     void registerMpvEvent();
     void unRegisterMpvEvent();
+    void registerTouchGestures();
 
     void showLoading();
     void hideLoading(bool dimming = true);
