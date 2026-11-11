@@ -7,10 +7,10 @@ if command -v gitleaks >/dev/null 2>&1; then
   gitleaks protect --staged --redact --no-banner
 fi
 SKILL_SCRIPT=""
-if [ -f "/Users/chungnh/.gemini/config/skills/project-pro/scripts/project_pro.py" ]; then
-  SKILL_SCRIPT="/Users/chungnh/.gemini/config/skills/project-pro/scripts/project_pro.py"
-elif [ -f "/Users/chungnh/.agent-skills/plugins/project-pro/skills/project-pro/scripts/project_pro.py" ]; then
-  SKILL_SCRIPT="/Users/chungnh/.agent-skills/plugins/project-pro/skills/project-pro/scripts/project_pro.py"
+if [ -f "$HOME/.gemini/config/skills/project-pro/scripts/project_pro.py" ]; then
+  SKILL_SCRIPT="$HOME/.gemini/config/skills/project-pro/scripts/project_pro.py"
+elif [ -f "$HOME/.agent-skills/plugins/project-pro/skills/project-pro/scripts/project_pro.py" ]; then
+  SKILL_SCRIPT="$HOME/.agent-skills/plugins/project-pro/skills/project-pro/scripts/project_pro.py"
 fi
 
 if [ -n "$SKILL_SCRIPT" ]; then

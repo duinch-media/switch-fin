@@ -1,5 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
-if [ -f "/Users/chungnh/.agent-skills/plugins/project-pro/skills/project-pro/scripts/project_pro.py" ]; then
-  python3 "/Users/chungnh/.agent-skills/plugins/project-pro/skills/project-pro/scripts/project_pro.py" check-commit-msg --file "$1"
+SKILL_SCRIPT=""
+if [ -f "$HOME/.gemini/config/skills/project-pro/scripts/project_pro.py" ]; then
+  SKILL_SCRIPT="$HOME/.gemini/config/skills/project-pro/scripts/project_pro.py"
+elif [ -f "$HOME/.agent-skills/plugins/project-pro/skills/project-pro/scripts/project_pro.py" ]; then
+  SKILL_SCRIPT="$HOME/.agent-skills/plugins/project-pro/skills/project-pro/scripts/project_pro.py"
+fi
+if [ -n "$SKILL_SCRIPT" ]; then
+  python3 "$SKILL_SCRIPT" check-commit-msg --file "$1"
 fi

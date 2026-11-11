@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"/Users/chungnh/.agent-skills/plugins/project-pro/skills/project-pro/scripts/project_pro.py\" agent-guard",
+            "command": "python3 \"$HOME/.agent-skills/plugins/project-pro/skills/project-pro/scripts/project_pro.py\" agent-guard",
             "timeout": 10
           }
         ]

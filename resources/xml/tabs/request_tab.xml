@@ -21,13 +21,13 @@
         <brls:DetailCell
             id="request/search/filter"
             title="Type"
-            width="140"
+            width="170"
             marginRight="12" />
 
         <brls:DetailCell
             id="request/search/settings"
             title="Settings"
-            width="160" />
+            width="200" />
     </brls:Box>
 
     <brls:Label
@@ -35,7 +35,7 @@
         fontSize="14"
         textColor="@theme/font/grey"
         marginBottom="12"
-        text="Enter a title above to search Radarr &amp; Sonarr" />
+        visibility="gone" />
 
     <!-- poster grid: wraps into rows (a plain row Box does not wrap) -->
     <RecyclingGrid

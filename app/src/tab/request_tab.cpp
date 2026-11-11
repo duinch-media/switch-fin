@@ -71,12 +71,14 @@ void RequestTab::doSearch(const std::string& query) {
     bool radarr = ArrConfig::isRadarrConfigured();
     bool sonarr = ArrConfig::isSonarrConfigured();
     if (!radarr && !sonarr) {
+        this->labelStatus->setVisibility(brls::Visibility::VISIBLE);
         this->labelStatus->setText("Radarr and Sonarr are not configured. Click Settings to configure.");
         return;
     }
 
     // both services are always queried: the filter only narrows what is shown,
     // so switching it never needs a new search
+    this->labelStatus->setVisibility(brls::Visibility::VISIBLE);
     this->labelStatus->setText("Searching for \"" + query + "\"...");
     this->grid->showSkeleton();
 

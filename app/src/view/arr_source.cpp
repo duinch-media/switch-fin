@@ -38,7 +38,15 @@ RecyclingGridItem* ArrDataSource::cellForRow(RecyclingView* recycler, size_t ind
     if (item.year > 0) ext = std::to_string(item.year) + " · " + ext;
     cell->labelExt->setText(ext);
 
-    cell->badgeTopRight->setVisibility(brls::Visibility::GONE);
+    if (item.status == domain::RequestStatus::AVAILABLE) {
+        cell->badgeTopRight->setImageFromSVGRes("icon/ico-checkmark.svg");
+        cell->badgeTopRight->setVisibility(brls::Visibility::VISIBLE);
+    } else if (item.status == domain::RequestStatus::REQUESTED || item.status == domain::RequestStatus::DOWNLOADING) {
+        cell->badgeTopRight->setImageFromSVGRes("icon/ico-download.svg");
+        cell->badgeTopRight->setVisibility(brls::Visibility::VISIBLE);
+    } else {
+        cell->badgeTopRight->setVisibility(brls::Visibility::GONE);
+    }
     if (!item.posterUrl.empty()) Image::with(cell->picture, item.posterUrl);
     return cell;
 }

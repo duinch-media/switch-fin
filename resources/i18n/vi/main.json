@@ -12,7 +12,7 @@
     "setting": "Cài đặt"
   },
   "home": {
-    "resume": "Tiêp tục xem",
+    "resume": "Tiếp tục xem",
     "nextup": "Kế tiếp",
     "latest": "Vừa thêm"
   },
@@ -45,7 +45,7 @@
     "audio": "Bản âm thanh",
     "common": "Chung",
     "speed": "Tốc độ",
-    "quality": "Chật lượng",
+    "quality": "Chất lượng",
     "chapter": "Chương",
     "auto": "Tự động",
     "toggle": "Mở/Dừng",
@@ -53,7 +53,7 @@
     "next": "Sau",
     "error": "Lỗi trong khi phát",
     "episode": "Tập",
-    "speed_up": "Tốc độ hệ tại {}"
+    "speed_up": "Tốc độ hiện tại {}"
   },
   "ebook": {
     "zoom": "Thu phóng",
@@ -121,7 +121,7 @@
     "unplayed": "Chưa phát"
   },
   "search": {
-    "hint": "Từ khóa hỗ trợ và chữ cái đầu của chúng",
+    "hint": "Nhập tên phim hoặc chữ cái đầu...",
     "clear": "Xoá tất cả",
     "delete": "Xoá",
     "paste": "Dán",
@@ -142,7 +142,7 @@
   "remote": {
     "local": "Thiết bị",
     "folder": "Thư mục",
-    "up": "Trờ về",
+    "up": "Trở về",
     "add": "Thêm máy chủ",
     "type": "Loại",
     "name": "Tên",
@@ -188,7 +188,7 @@
     "username": "Tài khoản",
     "password": "Mật khẩu",
     "server": {
-      "header": "Server",
+      "header": "Máy chủ",
       "detail": "Chi tiết máy chủ",
       "connect_new": "Máy chủ mới",
       "connect_to": "Kết nối với máy chủ Jellyfin",
@@ -196,7 +196,7 @@
       "connect": "Kết nối",
       "delete": "Xác nhận xoá?",
       "local": "Máy chủ cục bộ",
-      "users": "{} users",
+      "users": "{} người dùng",
       "sigin_to": "Đăng nhập vào  {}",
       "signin": "Đăng nhập"
     },
@@ -204,7 +204,7 @@
       "header": "Phát lại",
       "bottom_bar": "Hiển thị thanh tiến trình bên dưới",
       "low_quality": "Giải mã chất lượng thấp (sử dụng ít CPU hơn)",
-      "in_memory_cache": "Trong bộ nhớ đệm",
+      "in_memory_cache": "Bộ nhớ đệm (RAM)",
       "subs_fallback": "Tự động tải phụ đề",
       "hwdec": "Giải mã phần cứng",
       "force_directplay": "Buộc phát trực tiếp",
@@ -246,12 +246,12 @@
       "reset": "Mặc định"
     },
     "network": {
-      "header": "Network",
+      "header": "Mạng",
       "threads": "Số lượng hình ảnh tải về",
       "timeout": "Thời gian quá hạn (ms)",
       "proxy": "Cài đặt Proxy",
       "host": "Host",
-      "port": "Port"
+      "port": "Cổng"
     },
     "ui": {
       "header": "Giao diện",
@@ -297,7 +297,7 @@
       "single": "Trường hợp duy nhất",
       "overclock": "CPU Overclock",
       "debug": "Màn hình gỡ lỗi",
-      "sync": "Cài đặt bảo lưu thứ tự",
+      "sync": "Đồng bộ tiến trình xem",
       "theme": {
         "header": "Giao diện (yêu cầu khởi động lại)",
         "1": "Tự động",
