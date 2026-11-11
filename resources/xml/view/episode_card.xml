@@ -1,5 +1,5 @@
 <brls:Box
-    highlightCornerRadius="8"
+    highlightCornerRadius="10"
     padding="5">
 
     <brls:Box
@@ -12,7 +12,8 @@
                 backgroundColor="@theme/color/grey_1"
                 scalingType="fill"
                 height="180"
-                image="@res/img/video-card-bg.png" />
+                image="@res/img/video-card-bg.png"
+                cornerRadius="8" />
 
             <SVGImage
                 id="video/card/badge/top"
